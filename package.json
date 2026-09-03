@@ -1,0 +1,29 @@
+{
+  "name": "lyric-dom",
+  "version": "0.1.0",
+  "description": "框架无关的高性能歌词渲染引擎（Apple Music 风格逐字歌词）",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./renderer.css": "./dist/renderer.css"
+  },
+  "files": ["dist"],
+  "sideEffects": ["**/*.css"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run"
+  },
+  "keywords": ["lyrics", "karaoke", "apple-music", "dom", "renderer"],
+  "devDependencies": {
+    "happy-dom": "^20.11.1",
+    "tsup": "^8.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  }
+}
