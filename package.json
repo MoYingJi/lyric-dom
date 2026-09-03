@@ -13,19 +13,32 @@
     },
     "./renderer.css": "./dist/renderer.css"
   },
-  "files": ["dist"],
-  "sideEffects": ["**/*.css"],
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsup",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "biome check .",
+    "format": "biome format --write ."
   },
-  "keywords": ["lyrics", "karaoke", "apple-music", "dom", "renderer"],
+  "keywords": [
+    "lyrics",
+    "karaoke",
+    "apple-music",
+    "dom",
+    "renderer"
+  ],
   "devDependencies": {
-    "happy-dom": "^20.11.1",
-    "tsup": "^8.0.0",
+    "@biomejs/biome": "^2.5.12",
+    "happy-dom": "^20.13.2",
+    "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "vite": "^7.0.0",
-    "vitest": "^4.1.10"
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0"
   }
 }
