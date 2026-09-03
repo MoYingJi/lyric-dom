@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>lyric-dom demo</title>
+  </head>
+  <body>
+    <div id="app">
+      <main id="lyrics-container"></main>
+      <aside id="panel">
+        <div id="playback">
+          <button id="play-btn">播放</button>
+          <span id="time-label">0:00 / 0:00</span>
+          <input id="time-slider" type="range" min="0" max="1000" step="100" value="0" />
+          <select id="rate-select">
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1x</option>
+            <option value="2">2x</option>
+            <option value="4">4x</option>
+          </select>
+        </div>
+        <div id="controls"></div>
+      </aside>
+    </div>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>
