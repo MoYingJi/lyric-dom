@@ -1,3 +1,5 @@
+/* ---- 容器 ---- */
+
 .lp-root {
   position: relative;
   width: 100%;
@@ -58,6 +60,14 @@
   }
 }
 
+.lp-line.duet.bg {
+  transform-origin: right top;
+}
+
+.lp-line.duet .lp-content {
+  margin-left: auto;
+}
+
 /* ---- 内容包裹层（主歌词 + 副歌词） ---- */
 
 .lp-content {
@@ -85,56 +95,37 @@
   }
 }
 
-.lp-line.duet.bg {
-  transform-origin: right top;
+/* ---- 副文本（翻译/音译） ---- */
+
+.lp-sub {
+  font-size: var(--lp-sub-font-size, max(0.5em, 10px));
+  line-height: var(--lp-sub-line-height, 1.5em);
+  opacity: calc(var(--pass, 1) * var(--lp-sub-opacity, 0.3));
+  color: var(--lp-sub-color, inherit);
 }
 
-.lp-line.duet .lp-content {
-  margin-left: auto;
-}
+/* ---- 间奏圆点 ---- */
 
-/* ---- 对唱左右分栏 ---- */
+.lp-dots {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.2em 1em;
+  width: fit-content;
+  opacity: 0;
+  transform-origin: left center;
+  pointer-events: none;
 
-.lp-has-duet {
-  --lp-duet-indent: 15%;
-}
-
-.lp-has-duet .lp-line:not(.bg):not(.duet) {
-  padding-inline-end: var(--lp-duet-indent);
-}
-
-.lp-has-duet .lp-line.duet:not(.bg) {
-  padding-inline-start: var(--lp-duet-indent);
-}
-
-@media (max-width: 600px) {
-  .lp-has-duet {
-    --lp-duet-indent: 8%;
+  & > span {
+    width: var(--lp-dot-size, 0.45em);
+    height: var(--lp-dot-size, 0.45em);
+    display: inline-block;
+    border-radius: 50%;
+    background-color: var(--lp-color, #fff);
   }
-}
-
-.lp-credit {
-  opacity: var(--lp-credit-opacity, 0.3);
-  pointer-events: auto !important; /* 启用交互并阻止点击穿透到下方的普通歌词行上 */
-  z-index: 10 !important; /* 提升层级，防止被普通歌词行（尤其是最后一行）遮挡和阻断点击 */
-  background: none !important;
-  background-color: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
-  outline: none !important;
-}
-
-.lp-credit:hover,
-.lp-credit:active {
-  background: none !important;
-  background-color: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
-  outline: none !important;
-}
-
-.lp-credit:empty {
-  display: none;
 }
 
 /* ---- 主文本 ---- */
@@ -186,38 +177,53 @@
   font-family: var(--lyric-font-latin, inherit);
 }
 
-/* ---- 副文本（翻译/音译） ---- */
+/* ---- 对唱左右分栏 ---- */
 
-.lp-sub {
-  font-size: var(--lp-sub-font-size, max(0.5em, 10px));
-  line-height: var(--lp-sub-line-height, 1.5em);
-  opacity: calc(var(--pass, 1) * var(--lp-sub-opacity, 0.3));
-  color: var(--lp-sub-color, inherit);
+.lp-has-duet {
+  --lp-duet-indent: 15%;
 }
 
-/* ---- 间奏圆点 ---- */
+.lp-has-duet .lp-line:not(.bg):not(.duet) {
+  padding-inline-end: var(--lp-duet-indent);
+}
 
-.lp-dots {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.35em;
-  padding: 0.2em 1em;
-  width: fit-content;
-  opacity: 0;
-  transform-origin: left center;
-  pointer-events: none;
+.lp-has-duet .lp-line.duet:not(.bg) {
+  padding-inline-start: var(--lp-duet-indent);
+}
 
-  & > span {
-    width: var(--lp-dot-size, 0.45em);
-    height: var(--lp-dot-size, 0.45em);
-    display: inline-block;
-    border-radius: 50%;
-    background-color: var(--lp-color, #fff);
+@media (max-width: 600px) {
+  .lp-has-duet {
+    --lp-duet-indent: 8%;
   }
 }
+
+/* ---- bottom-line（制作者信息等自定义内容） ---- */
+
+.lp-credit {
+  opacity: var(--lp-credit-opacity, 0.3);
+  pointer-events: auto !important; /* 启用交互并阻止点击穿透到下方的普通歌词行上 */
+  z-index: 10 !important; /* 提升层级，防止被普通歌词行（尤其是最后一行）遮挡和阻断点击 */
+  background: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.lp-credit:hover,
+.lp-credit:active {
+  background: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.lp-credit:empty {
+  display: none;
+}
+
+/* ---- 悬停交互 ---- */
 
 @media (hover: hover) and (pointer: fine) {
   .lp-line:not(.bg) .lp-content {
