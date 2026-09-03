@@ -19,6 +19,8 @@ body {
   display: flex;
 }
 
+/* ---- 歌词区域 ---- */
+
 #lyrics-container {
   flex: 1;
   height: 100%;
@@ -26,6 +28,8 @@ body {
   font-weight: 700;
   --lp-color: #fff;
 }
+
+/* ---- 右侧面板 ---- */
 
 #panel {
   width: 320px;

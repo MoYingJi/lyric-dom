@@ -1,3 +1,5 @@
+/* ---- 容器 ---- */
+
 .lp-root {
   position: relative;
   width: 100%;
@@ -16,6 +18,8 @@
   padding-left: var(--lp-padding-x, 1em);
   padding-right: var(--lp-padding-x, 1em);
 }
+
+/* ---- 歌词行 ---- */
 
 .lp-line {
   position: absolute;
@@ -40,7 +44,7 @@
     color: var(--lp-duet-color, var(--lp-color, #fff));
   }
 
-  /* 背景行（和声） */
+  /* 背景行 */
   &.bg {
     font-size: var(--lp-bg-font-size, 0.75em);
     padding-left: calc(1em / 0.75);
@@ -59,6 +63,12 @@
 .lp-line.duet.bg {
   transform-origin: right top;
 }
+
+.lp-line.duet .lp-content {
+  margin-left: auto;
+}
+
+/* ---- 内容包裹层 ---- */
 
 .lp-content {
   position: relative;
@@ -85,9 +95,7 @@
   }
 }
 
-.lp-line.duet .lp-content {
-  margin-left: auto;
-}
+/* ---- 副文本 ---- */
 
 .lp-sub {
   font-size: var(--lp-sub-font-size, max(0.5em, 10px));
@@ -95,6 +103,8 @@
   opacity: calc(var(--pass, 1) * var(--lp-sub-opacity, 0.3));
   color: var(--lp-sub-color, inherit);
 }
+
+/* ---- 间奏圆点 ---- */
 
 .lp-dots {
   position: absolute;
@@ -118,6 +128,8 @@
   }
 }
 
+/* ---- 主文本 ---- */
+
 .lp-main {
   position: relative;
   max-width: 100%;
@@ -132,12 +144,12 @@
     vertical-align: bottom;
   }
 
-  /* 强调单词包裹层（逐字符拆分的容器） */
+  /* 强调单词包裹层 */
   & > span.lp-emp-wrapper {
     display: inline-block;
     white-space: pre;
     vertical-align: bottom;
-    /* 为缩放/辉光溢出预留空间，负 margin 抵消布局影响 */
+    /* 为缩放辉光溢出预留空间，负 margin 抵消布局影响 */
     padding: 1em;
     margin: -1em;
 
@@ -165,6 +177,8 @@
   font-family: var(--lyric-font-latin, inherit);
 }
 
+/* ---- 对唱左右分栏 ---- */
+
 .lp-has-duet {
   --lp-duet-indent: 15%;
 }
@@ -183,10 +197,12 @@
   }
 }
 
+/* ---- 底部信息行 ---- */
+
 .lp-credit {
   opacity: var(--lp-credit-opacity, 0.3);
-  pointer-events: auto !important; /* 启用交互并阻止点击穿透到下方的普通歌词行上 */
-  z-index: 10 !important; /* 提升层级，防止被普通歌词行（尤其是最后一行）遮挡和阻断点击 */
+  pointer-events: auto !important; /* 启用交互并阻止点击穿透到下方的歌词行 */
+  z-index: 10 !important; /* 提升层级，防止被歌词行遮挡和阻断点击 */
   background: none !important;
   background-color: transparent !important;
   box-shadow: none !important;
@@ -206,6 +222,8 @@
 .lp-credit:empty {
   display: none;
 }
+
+/* ---- 悬停交互 ---- */
 
 @media (hover: hover) and (pointer: fine) {
   .lp-line:not(.bg) .lp-content {
