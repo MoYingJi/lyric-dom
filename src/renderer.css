@@ -64,10 +64,6 @@
   transform-origin: right top;
 }
 
-.lp-line.duet .lp-content {
-  margin-left: auto;
-}
-
 /* ---- 内容包裹层 ---- */
 
 .lp-content {
@@ -93,6 +89,10 @@
       opacity 0.35s ease;
     pointer-events: none;
   }
+}
+
+.lp-line.duet .lp-content {
+  margin-left: auto;
 }
 
 /* ---- 副文本 ---- */
