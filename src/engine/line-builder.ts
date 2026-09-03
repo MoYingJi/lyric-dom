@@ -3,7 +3,7 @@
  */
 
 import type { LyricLine } from "../types";
-import { buildWordSpans, type WordMeasurement, type WordAnimTarget } from "./word-builder";
+import { buildWordSpans, type WordAnimTarget, type WordMeasurement } from "./word-builder";
 
 /** 行 DOM 构建选项 */
 export interface LineBuildOptions {
@@ -62,7 +62,7 @@ export const buildLineElements = (
   for (let i = 0; i < lineCount; i++) {
     const line = lines[i];
     const lineEl = document.createElement("div");
-    lineEl.className = "lp-line" + (line.isDuet ? " duet" : "") + (line.isBG ? " bg" : "");
+    lineEl.className = `lp-line${line.isDuet ? " duet" : ""}${line.isBG ? " bg" : ""}`;
     const mainDiv = document.createElement("div");
     mainDiv.className = "lp-main";
 

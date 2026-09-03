@@ -12,11 +12,7 @@ body,
 body {
   background: #1a1a1e;
   color: #eee;
-  font-family:
-    system-ui,
-    "Segoe UI",
-    "Microsoft YaHei",
-    sans-serif;
+  font-family: system-ui, "Segoe UI", "Microsoft YaHei", sans-serif;
 }
 
 #app {

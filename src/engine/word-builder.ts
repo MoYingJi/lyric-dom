@@ -2,9 +2,8 @@
  * 歌词渲染引擎 — 单词 span 构建与掩码测量
  */
 
-import { chunkAndSplitLyricWords } from "../utils/split-words";
 import type { LyricLine, LyricWord } from "../types";
-import { needsSpaceBetween } from "../utils/split-words";
+import { chunkAndSplitLyricWords, needsSpaceBetween } from "../utils/split-words";
 import { shouldChunkEmphasize } from "./emphasize";
 
 /** 单个歌词单词的 DOM 元素与测量数据 */

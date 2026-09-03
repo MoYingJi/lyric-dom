@@ -5,8 +5,8 @@
  * 圆点依次点亮，呈现进度指示效果。
  */
 
-import { clamp, easeInOutBack, easeOutExpo } from "../utils/math";
 import type { LyricLine } from "../types";
+import { clamp, easeInOutBack, easeOutExpo } from "../utils/math";
 
 /** 间奏检测结果：[起始时间, 结束时间, 前一行索引, 下一行是否为对唱] */
 export type InterludeInfo = [number, number, number, boolean];

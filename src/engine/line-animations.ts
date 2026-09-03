@@ -6,8 +6,8 @@
  */
 
 import type { LyricLine } from "../types";
+import { createEmphasizeAnimations, createFloatAnimation } from "./emphasize";
 import type { WordAnimTarget } from "./word-builder";
-import { createFloatAnimation, createEmphasizeAnimations } from "./emphasize";
 
 /** 行激活时的动画创建选项 */
 export interface ActivateOptions {

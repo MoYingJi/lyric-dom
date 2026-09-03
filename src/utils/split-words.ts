@@ -101,7 +101,8 @@ export const chunkAndSplitLyricWords = (words: LyricWord[]): (LyricWord | LyricW
     if (actual === expected) {
       // 将前导空白从分组中提出
       while (group.length > 1 && !group[0].word.trim()) {
-        result.push(group.shift()!);
+        const leading = group.shift();
+        if (leading) result.push(leading);
       }
       result.push(group.length === 1 ? group[0] : group);
       group = [];

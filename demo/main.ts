@@ -1,4 +1,4 @@
-import { LyricRenderer, applyScrollPreroll } from "../src";
+import { applyScrollPreroll, LyricRenderer } from "../src";
 import { DEMO_LYRICS, TOTAL_DURATION } from "./lyrics";
 import { buildPanel, type ControlDef } from "./panel";
 import "../src/renderer.css";

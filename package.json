@@ -1,17 +1,17 @@
 {
   "name": "lyric-dom",
   "version": "0.1.0",
-  "description": "框架无关的高性能歌词渲染引擎（Apple Music 风格逐字歌词）",
+  "description": "A framework-agnostic karaoke lyrics renderer for the browser, built on the native DOM API with zero runtime dependencies.",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
     },
-    "./renderer.css": "./dist/renderer.css"
+    "./renderer.css": "./dist/style.css"
   },
   "files": [
     "dist"
@@ -21,7 +21,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "tsup",
+    "build": "tsdown",
     "test": "vitest run",
     "lint": "biome check .",
     "format": "biome format --write ."
@@ -29,15 +29,15 @@
   "keywords": [
     "lyrics",
     "karaoke",
-    "apple-music",
     "dom",
     "renderer"
   ],
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",
+    "@tsdown/css": "^0.22.14",
     "happy-dom": "^20.13.2",
-    "tsup": "^8.5.1",
-    "typescript": "^5.9.3",
+    "tsdown": "^0.22.14",
+    "typescript": "^7.0.2",
     "vite": "^8.2.2",
     "vitest": "^5.0.0"
   }

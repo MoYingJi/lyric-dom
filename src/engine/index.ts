@@ -1,23 +1,24 @@
-import { Spring, type SpringParams } from "./spring";
 import type { LyricLine } from "../types";
 import { setMin } from "../utils/math";
 import { DEFAULTS } from "./constants";
 import {
-  measureAndApplyWordMasks,
-  type WordMeasurement,
-  type WordAnimTarget,
-} from "./word-builder";
-import { buildLineElements } from "./line-builder";
-import { LineAnimationController } from "./line-animations";
-import {
   createInterludeDots,
   detectInterlude,
-  renderInterludeDots,
-  type InterludeState,
   type InterludeCache,
+  type InterludeState,
+  renderInterludeDots,
 } from "./interlude";
+import { LineAnimationController } from "./line-animations";
+import { buildLineElements } from "./line-builder";
+import { Spring, type SpringParams } from "./spring";
+import {
+  measureAndApplyWordMasks,
+  type WordAnimTarget,
+  type WordMeasurement,
+} from "./word-builder";
 
 export type { RendererConfig } from "./constants";
+
 import type { RendererConfig } from "./constants";
 
 export class LyricRenderer {

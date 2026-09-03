@@ -10,7 +10,12 @@ const spread = (start: number, duration: number, texts: string[]): LyricWord[] =
   }));
 };
 
-const mk = (start: number, duration: number, words: LyricWord[], extra?: Partial<LyricLine>): LyricLine => ({
+const mk = (
+  start: number,
+  duration: number,
+  words: LyricWord[],
+  extra?: Partial<LyricLine>,
+): LyricLine => ({
   words,
   translatedLyric: "",
   romanLyric: "",
@@ -57,13 +62,18 @@ export const DEMO_LYRICS: LyricLine[] = [
     romanLyric: "huí yì yī jiù xiān yàn",
   }),
   // 长音单词（≥1000ms 触发强调动画）
-  mk(55200, 7400, [
-    { word: "最后", startTime: 55200, endTime: 56800 },
-    { word: "的", startTime: 56800, endTime: 57400 },
-    { word: "声——", startTime: 57400, endTime: 62600 },
-  ], {
-    translatedLyric: "The last note lingers",
-  }),
+  mk(
+    55200,
+    7400,
+    [
+      { word: "最后", startTime: 55200, endTime: 56800 },
+      { word: "的", startTime: 56800, endTime: 57400 },
+      { word: "声——", startTime: 57400, endTime: 62600 },
+    ],
+    {
+      translatedLyric: "The last note lingers",
+    },
+  ),
   mk(63000, 5000, spread(63000, 5000, ["尾音", "停在", "唇边"]), {
     translatedLyric: "and rests on the lips",
   }),
