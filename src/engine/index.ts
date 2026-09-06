@@ -57,6 +57,9 @@ export class LyricRenderer {
   private activeLineSet = new Set<number>();
   /** 上一次处理的播放时间，用于 seek 检测 */
   private lastProcessedTime = -1;
+  /** processTime 复用缓冲，避免每帧分配 */
+  private activatedBuffer: number[] = [];
+  private deactivatedBuffer = new Set<number>();
 
   /** 每行的 Y 轴位置弹簧 */
   private positionSprings: Spring[] = [];
@@ -508,8 +511,6 @@ export class LyricRenderer {
     if (config.scrollResetDelay != null) this.scrollResetDelay = config.scrollResetDelay;
     if (config.minInterludeGap != null) this.minInterludeGap = config.minInterludeGap;
     if (config.breatheCycleTarget != null) this.breatheCycleTarget = config.breatheCycleTarget;
-    if (config.alphaAttackSpeed != null) this.alphaAttackSpeed = config.alphaAttackSpeed;
-    if (config.alphaReleaseSpeed != null) this.alphaReleaseSpeed = config.alphaReleaseSpeed;
     if (config.inactiveAlpha != null) this.inactiveAlpha = config.inactiveAlpha;
     if (config.hidePassedLines != null) this.hidePassedLines = config.hidePassedLines;
     if (config.enableBlur != null) this.enableBlur = config.enableBlur;
@@ -589,8 +590,10 @@ export class LyricRenderer {
     this.snapNextSeek = false;
 
     const lines = this.lines;
-    const activated: number[] = [];
-    const deactivated = new Set<number>();
+    const activated = this.activatedBuffer;
+    const deactivated = this.deactivatedBuffer;
+    activated.length = 0;
+    deactivated.clear();
 
     // 检测新激活的行
     for (let i = 0; i < lines.length; i++) {
@@ -615,9 +618,8 @@ export class LyricRenderer {
 
     // 检测需要停用的行
     for (const lineIdx of this.activeLineSet) {
-      const start = this.pairStartTime[lineIdx];
       const end = this.pairEndTime[lineIdx];
-      if (start == null || currentTime < start || currentTime >= end) {
+      if (currentTime < this.pairStartTime[lineIdx] || currentTime >= end) {
         deactivated.add(lineIdx);
       }
     }
@@ -663,11 +665,7 @@ export class LyricRenderer {
     for (let i = 0; i < lines.length; i++) {
       if (this.activeLineSet.has(i)) continue;
       const partner = this.pairPartnerIndex[i];
-      if (
-        partner !== -1 &&
-        partner < i &&
-        (this.activeLineSet.has(partner) || this.activeLineSet.has(i))
-      ) {
+      if (partner !== -1 && partner < i && this.activeLineSet.has(partner)) {
         continue;
       }
       const start = this.pairStartTime[i];
@@ -1253,12 +1251,10 @@ export class LyricRenderer {
     this.needsFullSync = true;
   };
 
-  /** 将当前弹簧参数应用到所有弹簧实例 */
+  /** 将当前弹簧参数应用到位置弹簧 */
   private applySpringParams = () => {
     const config = this.springParams;
     for (const spring of this.positionSprings) spring.updateParams(config);
     this.bottomLineSpring.updateParams(config);
-    for (const spring of this.scaleSprings)
-      spring.updateParams({ mass: 2, damping: 25, stiffness: 100 });
   };
 }

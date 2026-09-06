@@ -153,16 +153,6 @@ export interface RendererConfig {
    */
   breatheCycleTarget: number;
   /**
-   * 行激活时透明度提升响应速度
-   * @default 50
-   */
-  alphaAttackSpeed: number;
-  /**
-   * 行离开时透明度衰减响应速度
-   * @default 7
-   */
-  alphaReleaseSpeed: number;
-  /**
    * 非激活行的基础透明度（0~1）
    * @default 0.2
    */

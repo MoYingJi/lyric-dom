@@ -144,6 +144,8 @@ export class Spring {
   arrived = (): boolean => {
     if (this.settled) return true;
     if (this.pendingParams !== undefined || this.pendingPosition !== undefined) return false;
+    // 远离目标时不可能稳定，跳过速度/加速度求值
+    if (Math.abs(this.targetPosition - this.position) >= 0.01) return false;
     const isSettled =
       Math.abs(this.targetPosition - this.position) < 0.01 &&
       Math.abs(this.velocitySolver(this.elapsedTime)) < 0.01 &&
@@ -235,6 +237,9 @@ export class Spring {
    * @param delay - 延迟时间 (ms)，0 表示立即生效
    */
   setTargetPosition = (position: number, delay = 0) => {
+    if (delay === 0 && position === this.targetPosition && this.pendingPosition === undefined) {
+      return;
+    }
     if (delay > 0) {
       this.pendingPosition = {
         ...(this.pendingPosition ?? {}),

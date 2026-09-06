@@ -169,29 +169,13 @@ export const renderInterludeDots = (
 
   // 各圆点透明度
   const activeDuration = Math.max(0, totalDuration - 750);
-  const newOpacities: [string, string, string] = [
-    String(clamp(0, opacity * clamp(0.25, ((elapsed * 3) / activeDuration) * 0.75, 1), 1)),
-    String(
-      clamp(
-        0,
-        opacity * clamp(0.25, (((elapsed - activeDuration / 3) * 3) / activeDuration) * 0.75, 1),
-        1,
-      ),
-    ),
-    String(
-      clamp(
-        0,
-        opacity *
-          clamp(0.25, (((elapsed - (activeDuration / 3) * 2) * 3) / activeDuration) * 0.75, 1),
-        1,
-      ),
-    ),
-  ];
-
   for (let i = 0; i < 3; i++) {
-    if (cache.dotOpacities[i] !== newOpacities[i]) {
-      cache.dotOpacities[i] = newOpacities[i];
-      dotElements[i].style.opacity = newOpacities[i];
+    const segElapsed = elapsed - (activeDuration / 3) * i;
+    const segOpacity = clamp(0.25, ((segElapsed * 3) / activeDuration) * 0.75, 1);
+    const newOpacity = String(clamp(0, opacity * segOpacity, 1));
+    if (cache.dotOpacities[i] !== newOpacity) {
+      cache.dotOpacities[i] = newOpacity;
+      dotElements[i].style.opacity = newOpacity;
     }
   }
 };

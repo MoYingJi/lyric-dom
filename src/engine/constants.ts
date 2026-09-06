@@ -18,7 +18,7 @@ export const DEFAULTS = {
   /** 间奏圆点呼吸动画的目标周期（毫秒） */
   breatheCycleTarget: 1500,
   /** 透明度增加速度（激活时） */
-  alphaAttackSpeed: 50,
+  alphaAttackSpeed: 16,
   /** 透明度衰减速度（取消激活时） */
   alphaReleaseSpeed: 7,
   /** 非激活行的基础透明度 */

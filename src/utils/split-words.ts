@@ -1,6 +1,6 @@
 import type { LyricWord } from "../types";
 
-const CJK_RE = /^[\p{Unified_Ideograph}ࠀ-鿼]+$/u;
+const CJK_RE = /^[\p{Unified_Ideograph}぀-ヿ]+$/u;
 
 /**
  * 判断字符串是否全部为 CJK（中日韩统一表意文字）
@@ -107,14 +107,14 @@ export const chunkAndSplitLyricWords = (words: LyricWord[]): (LyricWord | LyricW
 
   // 利用 Intl.Segmenter 按词边界重新分组
   const fullText = atoms.map((a) => a.word).join("");
-  const segments = new Intl.Segmenter(undefined, { granularity: "word" });
+  const segments = new Intl.Segmenter(undefined, { granularity: "word" }).segment(fullText);
   const result: (LyricWord | LyricWord[])[] = [];
   let atomIdx = 0;
   let actual = 0;
   let expected = 0;
   let group: LyricWord[] = [];
 
-  for (const seg of segments.segment(fullText)) {
+  for (const seg of segments) {
     expected += seg.segment.length;
 
     while (actual < expected && atomIdx < atoms.length) {

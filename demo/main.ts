@@ -45,8 +45,6 @@ const renderer = new LyricRenderer(container, {
   enableWordHighlight: state.enableWordHighlight,
   minInterludeGap: state.minInterludeGap,
   breatheCycleTarget: state.breatheCycleTarget,
-  alphaAttackSpeed: state.alphaAttackSpeed,
-  alphaReleaseSpeed: state.alphaReleaseSpeed,
   inactiveAlpha: state.inactiveAlpha,
   hidePassedLines: state.hidePassedLines,
   enableBlur: state.enableBlur,

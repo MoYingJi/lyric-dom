@@ -63,9 +63,9 @@ export const applyScrollPreroll = (
     const newStart = Math.max(boundary, originalStartTime - advance);
     if (newStart < line.startTime) line.startTime = newStart;
 
-    // 配对背景行随主行一起提前
+    // 配对背景行随主行一起提前，但不晚于其原始开口时间
     const bg = lines[lineIdx + 1];
-    if (bg?.isBG) bg.startTime = line.startTime;
+    if (bg?.isBG) bg.startTime = Math.min(bg.startTime, line.startTime);
 
     // 更新重叠组：与上一组时间相交则并入，否则另起一组
     if (

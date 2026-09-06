@@ -255,7 +255,10 @@ export const measureAndApplyWordMasks = (
       const wordDuration = Math.abs(wordData.endTime - wordData.startTime) || 1;
       // preRoll：在 startTime 之前提前开始扫动，让相邻词亮区衔接而非硬切
       const preRoll = Math.min(80, wordDuration * 0.3);
-      const adjustedStart = Math.max(lineStart, wordData.startTime - preRoll);
+      const adjustedStart = Math.min(
+        wordData.startTime,
+        Math.max(lineStart, wordData.startTime - preRoll),
+      );
       const adjustedDuration = Math.max(1, wordData.endTime - adjustedStart);
       const startPos = padding - totalMaskWidth;
       const endPos = padding;

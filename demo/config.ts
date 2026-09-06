@@ -7,8 +7,6 @@ export interface DemoState extends Record<string, unknown> {
   enableWordHighlight: boolean;
   minInterludeGap: number;
   breatheCycleTarget: number;
-  alphaAttackSpeed: number;
-  alphaReleaseSpeed: number;
   inactiveAlpha: number;
   hidePassedLines: boolean;
   enableBlur: boolean;
@@ -32,8 +30,6 @@ export const createInitialState = (): DemoState => ({
   enableWordHighlight: DEFAULTS.enableWordHighlight,
   minInterludeGap: DEFAULTS.minInterludeGap,
   breatheCycleTarget: DEFAULTS.breatheCycleTarget,
-  alphaAttackSpeed: DEFAULTS.alphaAttackSpeed,
-  alphaReleaseSpeed: DEFAULTS.alphaReleaseSpeed,
   inactiveAlpha: DEFAULTS.inactiveAlpha,
   hidePassedLines: DEFAULTS.hidePassedLines,
   enableBlur: DEFAULTS.enableBlur,
@@ -70,8 +66,6 @@ export const CONTROL_DEFS: ControlDef<DemoState>[] = [
   { key: "minInterludeGap", label: "最小间隔", type: "range", min: 0, max: 10000, step: 500 },
   { key: "breatheCycleTarget", label: "呼吸周期", type: "range", min: 500, max: 4000, step: 100 },
   { type: "group", label: "透明度" },
-  { key: "alphaAttackSpeed", label: "激活速度", type: "range", min: 5, max: 200, step: 5 },
-  { key: "alphaReleaseSpeed", label: "衰减速度", type: "range", min: 1, max: 50, step: 1 },
   { key: "inactiveAlpha", label: "非激活透明度", type: "range", min: 0.05, max: 1, step: 0.05 },
   { key: "hidePassedLines", label: "隐藏已播行", type: "toggle" },
   { type: "group", label: "效果" },
