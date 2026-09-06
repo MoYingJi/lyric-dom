@@ -31,12 +31,12 @@ const scaleMatrix3dCSS = (s: number): string =>
 
 /**
  * 判断单词是否应该启用强调效果
- * - CJK：持续时间 ≥ 1000ms
- * - 非 CJK：持续时间 ≥ 1000ms 且长度 2~7
+ * - CJK：持续时间 ≥ minDuration（默认 1000ms）
+ * - 非 CJK：持续时间 ≥ minDuration 且长度 2~7
  */
-export const shouldEmphasize = (word: LyricWord): boolean => {
+export const shouldEmphasize = (word: LyricWord, minDuration = 1000): boolean => {
   const duration = word.endTime - word.startTime;
-  if (duration < 1000) return false;
+  if (duration < minDuration) return false;
   if (isCJK(word.word)) return true;
   const len = word.word.trim().length;
   return len > 1 && len <= 7;
@@ -45,8 +45,8 @@ export const shouldEmphasize = (word: LyricWord): boolean => {
 /**
  * 判断一组 chunk 是否应该启用强调效果
  */
-export const shouldChunkEmphasize = (chunk: LyricWord[]): boolean => {
-  if (chunk.some(shouldEmphasize)) return true;
+export const shouldChunkEmphasize = (chunk: LyricWord[], minDuration = 1000): boolean => {
+  if (chunk.some((w) => shouldEmphasize(w, minDuration))) return true;
   // 合并后再检查
   if (chunk.length > 1) {
     const merged: LyricWord = {
@@ -54,7 +54,7 @@ export const shouldChunkEmphasize = (chunk: LyricWord[]): boolean => {
       startTime: Math.min(...chunk.map((w) => w.startTime)),
       endTime: Math.max(...chunk.map((w) => w.endTime)),
     };
-    if (!isCJK(merged.word)) return shouldEmphasize(merged);
+    if (!isCJK(merged.word)) return shouldEmphasize(merged, minDuration);
   }
   return false;
 };

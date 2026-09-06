@@ -100,4 +100,57 @@ describe("lyric-kit compatibility", () => {
     renderer.dispose();
     container.remove();
   });
+
+  it("allows toggling and configuring scroll preroll optimization", () => {
+    const lines = [
+      {
+        startTime: 2000,
+        endTime: 4000,
+        isBG: false,
+        isDuet: false,
+        translatedLyric: "",
+        romanLyric: "",
+        words: [{ word: "Line 1", startTime: 2000, endTime: 4000 }],
+      },
+      {
+        startTime: 6000,
+        endTime: 8000,
+        isBG: false,
+        isDuet: false,
+        translatedLyric: "",
+        romanLyric: "",
+        words: [{ word: "Line 2", startTime: 6000, endTime: 8000 }],
+      },
+    ];
+
+    const container = document.createElement("div");
+    Object.defineProperty(container, "clientWidth", { value: 800 });
+    Object.defineProperty(container, "clientHeight", { value: 600 });
+    document.body.appendChild(container);
+
+    // 默认启用预滚：Line 2 应当提前 600ms (从 6000ms 提前至 5400ms)
+    const rendererDefault = new LyricRenderer(container);
+    rendererDefault.setLyrics(lines);
+    const internalLinesDefault = (rendererDefault as unknown as { lines: typeof lines }).lines;
+    expect(internalLinesDefault[1].startTime).toBe(5400);
+    rendererDefault.dispose();
+
+    // 禁用预滚：保持原始 6000ms
+    const rendererDisabled = new LyricRenderer(container, { enableScrollPreroll: false });
+    rendererDisabled.setLyrics(lines);
+    const internalLinesDisabled = (rendererDisabled as unknown as { lines: typeof lines }).lines;
+    expect(internalLinesDisabled[1].startTime).toBe(6000);
+    rendererDisabled.dispose();
+
+    // 自定义预滚提前量
+    const rendererCustom = new LyricRenderer(container, {
+      scrollPrerollOptions: { advanceNoOverlap: 800 },
+    });
+    rendererCustom.setLyrics(lines);
+    const internalLinesCustom = (rendererCustom as unknown as { lines: typeof lines }).lines;
+    expect(internalLinesCustom[1].startTime).toBe(5200);
+    rendererCustom.dispose();
+
+    container.remove();
+  });
 });

@@ -1,6 +1,18 @@
-export type { RendererConfig } from "./engine";
 export { LyricRenderer } from "./engine";
-export { DEFAULTS } from "./engine/constants";
-export type { SpringParams } from "./engine/spring";
-export type { LyricLanguage, LyricLine, LyricSpan, LyricWord } from "./types";
-export { applyScrollPreroll } from "./utils/scroll-preroll";
+export { DEFAULT_SCROLL_PREROLL, DEFAULTS } from "./engine/constants";
+export type {
+  LineClickCallback,
+  LyricLanguage,
+  LyricLine,
+  LyricSpan,
+  LyricWord,
+  RendererConfig,
+  ScrollPrerollOptions,
+  SpringParams,
+  WordAnimTarget,
+  WordMeasurement,
+} from "./types";
+export {
+  applyScrollPreroll,
+  DEFAULT_SCROLL_PREROLL_OPTIONS,
+} from "./utils/scroll-preroll";

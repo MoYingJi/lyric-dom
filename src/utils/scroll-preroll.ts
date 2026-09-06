@@ -1,11 +1,11 @@
-import type { LyricLine } from "../types";
+import type { LyricLine, ScrollPrerollOptions } from "../types";
 
-/** 与前一行无重叠时的提前量（毫秒） */
-const ADVANCE_NO_OVERLAP = 600;
-/** 与前一行有重叠时的提前量（毫秒） */
-const ADVANCE_OVERLAP = 400;
-/** 有重叠时的提前边界：前一行时长的比例位置 */
-const OVERLAP_BOUNDARY_RATIO = 0.3;
+/** 默认滚动预滚参数 */
+export const DEFAULT_SCROLL_PREROLL_OPTIONS: Required<ScrollPrerollOptions> = {
+  advanceNoOverlap: 600,
+  advanceOverlap: 400,
+  overlapBoundaryRatio: 0.3,
+};
 
 /**
  * 滚动预滚：提前行开始时间，让滚动渲染器在开唱前先把视野滚到位
@@ -15,9 +15,19 @@ const OVERLAP_BOUNDARY_RATIO = 0.3;
  * 避免把行提前进还在演唱中的对唱组。
  *
  * @param sourceLines - 规范化后的歌词行数组
+ * @param options - 自定义提前量与重叠比例参数
  * @returns 应用预滚后的克隆行数组
  */
-export const applyScrollPreroll = (sourceLines: readonly LyricLine[]): LyricLine[] => {
+export const applyScrollPreroll = (
+  sourceLines: readonly LyricLine[],
+  options?: Partial<ScrollPrerollOptions>,
+): LyricLine[] => {
+  const advanceNoOverlap =
+    options?.advanceNoOverlap ?? DEFAULT_SCROLL_PREROLL_OPTIONS.advanceNoOverlap;
+  const advanceOverlap = options?.advanceOverlap ?? DEFAULT_SCROLL_PREROLL_OPTIONS.advanceOverlap;
+  const overlapBoundaryRatio =
+    options?.overlapBoundaryRatio ?? DEFAULT_SCROLL_PREROLL_OPTIONS.overlapBoundaryRatio;
+
   const lines = sourceLines.map((line) => ({ ...line }));
 
   let prevLineStartTime = 0;
@@ -39,15 +49,14 @@ export const applyScrollPreroll = (sourceLines: readonly LyricLine[]): LyricLine
     if (hasPrevLine) {
       const hadGap = originalStartTime >= prevLineEndTime;
       if (hadGap) {
-        advance = ADVANCE_NO_OVERLAP;
+        advance = advanceNoOverlap;
         boundary = prevGroupEndTime;
       } else {
-        advance = ADVANCE_OVERLAP;
-        boundary =
-          prevLineStartTime + (prevLineEndTime - prevLineStartTime) * OVERLAP_BOUNDARY_RATIO;
+        advance = advanceOverlap;
+        boundary = prevLineStartTime + (prevLineEndTime - prevLineStartTime) * overlapBoundaryRatio;
       }
     } else {
-      advance = ADVANCE_NO_OVERLAP;
+      advance = advanceNoOverlap;
       boundary = 0;
     }
 

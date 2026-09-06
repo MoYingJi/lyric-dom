@@ -14,9 +14,12 @@ export interface DemoState extends Record<string, unknown> {
   enableBlur: boolean;
   enableFloatAnimation: boolean;
   enableEmphasizeEffect: boolean;
+  emphasizeMinDuration: number;
   showTranslation: boolean;
   showRomanization: boolean;
+  enableScrollPreroll: boolean;
   scrollResetDelay: number;
+  seekForwardThreshold: number;
   "spring.mass": number;
   "spring.damping": number;
   "spring.stiffness": number;
@@ -36,9 +39,12 @@ export const createInitialState = (): DemoState => ({
   enableBlur: DEFAULTS.enableBlur,
   enableFloatAnimation: DEFAULTS.enableFloatAnimation,
   enableEmphasizeEffect: DEFAULTS.enableEmphasizeEffect,
+  emphasizeMinDuration: DEFAULTS.emphasizeMinDuration,
   showTranslation: DEFAULTS.showTranslation,
   showRomanization: DEFAULTS.showRomanization,
+  enableScrollPreroll: DEFAULTS.enableScrollPreroll,
   scrollResetDelay: DEFAULTS.scrollResetDelay,
+  seekForwardThreshold: DEFAULTS.seekForwardThreshold,
   "spring.mass": 1,
   "spring.damping": 10,
   "spring.stiffness": 100,
@@ -48,8 +54,10 @@ export const createInitialState = (): DemoState => ({
 export const REBUILD_KEYS = new Set([
   "enableFloatAnimation",
   "enableEmphasizeEffect",
+  "emphasizeMinDuration",
   "showTranslation",
   "showRomanization",
+  "enableScrollPreroll",
 ]);
 
 export const CONTROL_DEFS: ControlDef<DemoState>[] = [
@@ -70,10 +78,27 @@ export const CONTROL_DEFS: ControlDef<DemoState>[] = [
   { key: "enableBlur", label: "逐行模糊", type: "toggle" },
   { key: "enableFloatAnimation", label: "逐字上浮", type: "toggle" },
   { key: "enableEmphasizeEffect", label: "强调辉光", type: "toggle" },
+  {
+    key: "emphasizeMinDuration",
+    label: "长音门槛(ms)",
+    type: "range",
+    min: 300,
+    max: 3000,
+    step: 100,
+  },
   { key: "showTranslation", label: "显示翻译", type: "toggle" },
   { key: "showRomanization", label: "显示音译", type: "toggle" },
-  { type: "group", label: "交互" },
-  { key: "scrollResetDelay", label: "滚动回弹延迟", type: "range", min: 0, max: 15000, step: 500 },
+  { type: "group", label: "滚动与优化" },
+  { key: "enableScrollPreroll", label: "滚动提前预滚", type: "toggle" },
+  { key: "scrollResetDelay", label: "回弹延迟", type: "range", min: 0, max: 15000, step: 500 },
+  {
+    key: "seekForwardThreshold",
+    label: "Seek前进门槛",
+    type: "range",
+    min: 500,
+    max: 5000,
+    step: 100,
+  },
   { type: "group", label: "弹簧参数" },
   { key: "spring.mass", label: "质量", type: "range", min: 0.1, max: 5, step: 0.1 },
   { key: "spring.damping", label: "阻尼", type: "range", min: 1, max: 60, step: 1 },

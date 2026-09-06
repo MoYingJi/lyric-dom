@@ -9,6 +9,8 @@ import { buildWordSpans, type WordAnimTarget, type WordMeasurement } from "./wor
 export interface LineBuildOptions {
   /** 是否启用强调效果（影响 span 结构） */
   enableEmphasizeEffect: boolean;
+  /** 触发强调效果的最小持续时间（毫秒） */
+  emphasizeMinDuration?: number;
   /** 是否显示翻译歌词 */
   showTranslation: boolean;
   /** 是否显示音译歌词 */
@@ -83,7 +85,12 @@ export const buildLineElements = (
       lineAnimTargets[i] = [];
     } else {
       // 构建单词 span + 动画目标描述
-      const result = buildWordSpans(line.words, mainDiv, options.enableEmphasizeEffect);
+      const result = buildWordSpans(
+        line.words,
+        mainDiv,
+        options.enableEmphasizeEffect,
+        options.emphasizeMinDuration,
+      );
       wordMeasurements[i] = result.measurements;
       lineAnimTargets[i] = result.animTargets;
     }

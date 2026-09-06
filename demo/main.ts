@@ -1,4 +1,4 @@
-import { applyScrollPreroll, LyricRenderer } from "../src";
+import { LyricRenderer } from "../src";
 import type { LyricLine } from "../src/types";
 import { CONTROL_DEFS, createInitialState, type DemoState, REBUILD_KEYS } from "./config";
 import { parseLyricFile } from "./importer";
@@ -52,9 +52,12 @@ const renderer = new LyricRenderer(container, {
   enableBlur: state.enableBlur,
   enableFloatAnimation: state.enableFloatAnimation,
   enableEmphasizeEffect: state.enableEmphasizeEffect,
+  emphasizeMinDuration: state.emphasizeMinDuration,
   showTranslation: state.showTranslation,
   showRomanization: state.showRomanization,
+  enableScrollPreroll: state.enableScrollPreroll,
   scrollResetDelay: state.scrollResetDelay,
+  seekForwardThreshold: state.seekForwardThreshold,
   onLineClick: (timeMs) => {
     if (player.hasAudio()) {
       player.seek(timeMs);
@@ -123,7 +126,7 @@ lyricFileInput.addEventListener("change", async () => {
   try {
     const loaded = await parseLyricFile(file);
     currentLines = loaded.lines;
-    renderer.setLyrics(applyScrollPreroll(loaded.lines));
+    renderer.setLyrics(loaded.lines);
     emptyPlaceholder.style.display = "none";
     lyricInfo.textContent = `歌词：${loaded.title} (${loaded.lines.length} 行)`;
   } catch (err) {
@@ -167,7 +170,7 @@ const handlePanelChange = (key: keyof DemoState & string) => {
   }
   renderer.setConfig({ [key]: state[key] });
   if (REBUILD_KEYS.has(key) && currentLines.length > 0) {
-    renderer.setLyrics(applyScrollPreroll(currentLines));
+    renderer.setLyrics(currentLines);
   }
 };
 

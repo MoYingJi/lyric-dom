@@ -46,6 +46,7 @@ export const buildWordSpans = (
   words: LyricWord[],
   mainDiv: HTMLDivElement,
   enableEmphasize = true,
+  emphasizeMinDuration = 1000,
 ): BuildResult => {
   const chunks = chunkAndSplitLyricWords(words);
   const measurements: WordMeasurement[] = [];
@@ -67,7 +68,8 @@ export const buildWordSpans = (
     let previousText = "";
     for (const chunk of chunks) {
       const atoms = Array.isArray(chunk) ? chunk : [chunk];
-      const isEmp = enableEmphasize && atoms.length > 0 && shouldChunkEmphasize(atoms);
+      const isEmp =
+        enableEmphasize && atoms.length > 0 && shouldChunkEmphasize(atoms, emphasizeMinDuration);
       const isLast = chunk === lastChunk;
 
       const firstText = atoms[0]?.word.trim();
@@ -106,7 +108,7 @@ export const buildWordSpans = (
   for (const chunk of chunks) {
     if (Array.isArray(chunk)) {
       const mergedText = chunk.map((word) => word.word).join("");
-      const isEmp = enableEmphasize && shouldChunkEmphasize(chunk);
+      const isEmp = enableEmphasize && shouldChunkEmphasize(chunk, emphasizeMinDuration);
       const isLast = chunk === lastChunk;
 
       if (mergedText.trimStart() !== mergedText) {
@@ -149,7 +151,7 @@ export const buildWordSpans = (
       previousText = "";
     } else {
       const text = chunk.word;
-      const isEmp = enableEmphasize && shouldChunkEmphasize([chunk]);
+      const isEmp = enableEmphasize && shouldChunkEmphasize([chunk], emphasizeMinDuration);
       const isLast = chunk === lastChunk;
 
       if (text.trimStart() !== text) {

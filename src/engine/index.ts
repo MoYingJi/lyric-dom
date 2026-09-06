@@ -1,5 +1,6 @@
-import type { LyricLine } from "../types";
+import type { LyricLine, RendererConfig, ScrollPrerollOptions, SpringParams } from "../types";
 import { setMin } from "../utils/math";
+import { applyScrollPreroll } from "../utils/scroll-preroll";
 import { DEFAULTS } from "./constants";
 import {
   createInterludeDots,
@@ -10,16 +11,14 @@ import {
 } from "./interlude";
 import { LineAnimationController } from "./line-animations";
 import { buildLineElements } from "./line-builder";
-import { Spring, type SpringParams } from "./spring";
+import { Spring } from "./spring";
 import {
   measureAndApplyWordMasks,
   type WordAnimTarget,
   type WordMeasurement,
 } from "./word-builder";
 
-export type { RendererConfig } from "./constants";
-
-import type { RendererConfig } from "./constants";
+export type { RendererConfig } from "../types";
 
 export class LyricRenderer {
   /** 外层容器 */
@@ -179,6 +178,20 @@ export class LyricRenderer {
   private showTranslation = DEFAULTS.showTranslation;
   /** 是否显示音译歌词 */
   private showRomanization = DEFAULTS.showRomanization;
+  /** 原始歌词数据（未应用滚动预滚前，用于动态开关预滚时重新计算） */
+  private rawLines: LyricLine[] = [];
+  /** 是否启用滚动提前预滚优化 */
+  private enableScrollPreroll = DEFAULTS.enableScrollPreroll;
+  /** 滚动提前预滚参数微调 */
+  private scrollPrerollOptions: Partial<ScrollPrerollOptions> = {
+    ...DEFAULTS.scrollPrerollOptions,
+  };
+  /** 播放跳转识别后退阈值（ms） */
+  private seekBackwardThreshold = DEFAULTS.seekBackwardThreshold;
+  /** 播放跳转识别前进阈值（ms） */
+  private seekForwardThreshold = DEFAULTS.seekForwardThreshold;
+  /** 触发长音节强调的最小持续时间（ms） */
+  private emphasizeMinDuration = DEFAULTS.emphasizeMinDuration;
 
   /** 容器尺寸变化观察器 */
   private containerResizeObserver: ResizeObserver;
@@ -302,11 +315,16 @@ export class LyricRenderer {
       this.pendingHiddenLyrics = lines;
       return;
     }
+    this.rawLines = lines;
+    const processedLines = this.enableScrollPreroll
+      ? applyScrollPreroll(lines, this.scrollPrerollOptions)
+      : lines.map((line) => ({ ...line }));
+
     const seekTime = this.pendingPlayTime >= 0 ? this.pendingPlayTime : 0;
     this.lineAnimations.cancelAll();
     for (const element of this.lineElements) element.remove();
     // 重置状态
-    this.lines = lines;
+    this.lines = processedLines;
     this.activeLineIndex = -1;
     this.activeLineSet.clear();
     this.lastProcessedTime = -1;
@@ -315,10 +333,10 @@ export class LyricRenderer {
     // 含对唱行时启用左右分栏布局
     this.container.classList.toggle(
       "lp-has-duet",
-      lines.some((line) => line.isDuet),
+      processedLines.some((line) => line.isDuet),
     );
 
-    const lineCount = lines.length;
+    const lineCount = processedLines.length;
 
     // 初始化弹簧（位置弹簧初始在屏幕外，缩放弹簧初始 97%）
     const offScreen = Math.max(this.containerHeight * 2, 2000);
@@ -331,7 +349,7 @@ export class LyricRenderer {
       this.positionSprings[i] = new Spring(offScreen);
       const scaleSpring = new Spring(97);
       scaleSpring.updateParams(
-        lines[i].isBG
+        processedLines[i].isBG
           ? { mass: 1, damping: 20, stiffness: 50 }
           : { mass: 2, damping: 25, stiffness: 100 },
       );
@@ -360,8 +378,9 @@ export class LyricRenderer {
     this.entranceComplete = false;
 
     // 构建 DOM
-    const built = buildLineElements(lines, {
+    const built = buildLineElements(this.lines, {
       enableEmphasizeEffect: this.enableEmphasizeEffect,
+      emphasizeMinDuration: this.emphasizeMinDuration,
       showTranslation: this.showTranslation,
       showRomanization: this.showRomanization,
     });
@@ -472,6 +491,36 @@ export class LyricRenderer {
       this.enableEmphasizeEffect = config.enableEmphasizeEffect;
     if (config.showTranslation != null) this.showTranslation = config.showTranslation;
     if (config.showRomanization != null) this.showRomanization = config.showRomanization;
+    if (
+      config.enableScrollPreroll != null &&
+      config.enableScrollPreroll !== this.enableScrollPreroll
+    ) {
+      this.enableScrollPreroll = config.enableScrollPreroll;
+      if (this.rawLines.length > 0) {
+        this.setLyrics(this.rawLines);
+        return;
+      }
+    }
+    if (config.scrollPrerollOptions != null) {
+      this.scrollPrerollOptions = { ...this.scrollPrerollOptions, ...config.scrollPrerollOptions };
+      if (this.enableScrollPreroll && this.rawLines.length > 0) {
+        this.setLyrics(this.rawLines);
+        return;
+      }
+    }
+    if (config.seekBackwardThreshold != null) {
+      this.seekBackwardThreshold = config.seekBackwardThreshold;
+    }
+    if (config.seekForwardThreshold != null) {
+      this.seekForwardThreshold = config.seekForwardThreshold;
+    }
+    if (
+      config.emphasizeMinDuration != null &&
+      config.emphasizeMinDuration !== this.emphasizeMinDuration
+    ) {
+      this.emphasizeMinDuration = config.emphasizeMinDuration;
+      layoutDirty = true;
+    }
 
     if (layoutDirty && this.lineElements.length > 0) {
       this.measureLineHeights();
@@ -489,7 +538,7 @@ export class LyricRenderer {
 
   /**
    * 处理播放时间变化，检测激活行的增减
-   * 自动识别 seek：时间倒退 >100ms 或前进 >2000ms
+   * 自动识别 seek：时间倒退 >seekBackwardThreshold 或前进 >seekForwardThreshold
    * @param currentTime - 当前播放时间（毫秒）
    * @returns 是否发生了激活行变化
    */
@@ -497,7 +546,8 @@ export class LyricRenderer {
     const isFirst = this.lastProcessedTime < 0;
     const isSeeked =
       !isFirst &&
-      (currentTime < this.lastProcessedTime - 100 || currentTime > this.lastProcessedTime + 2000);
+      (currentTime < this.lastProcessedTime - this.seekBackwardThreshold ||
+        currentTime > this.lastProcessedTime + this.seekForwardThreshold);
     this.lastProcessedTime = currentTime;
 
     if (isFirst || isSeeked) {
