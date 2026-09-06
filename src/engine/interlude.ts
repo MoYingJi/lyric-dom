@@ -1,6 +1,5 @@
 /**
  * 歌词渲染引擎 — 间奏圆点动画
- *
  * 管理三个圆点的生命周期：入场缩放/淡入 → 呼吸动画 → 退场缩放/淡出。
  * 圆点依次点亮，呈现进度指示效果。
  */
@@ -13,9 +12,7 @@ export type InterludeInfo = [number, number, number, boolean];
 
 /**
  * 检测当前时间点是否处于间奏段
- *
- * 在当前激活行的前后各一行范围内搜索间奏间隙。
- *
+ * 在当前激活行的前后各一行范围内搜索间奏间隙
  * @param currentTime - 当前播放时间（毫秒）
  * @param activeLineIndex - 当前激活行索引
  * @param lines - 歌词行数组
@@ -77,7 +74,6 @@ export interface InterludeCache {
 
 /**
  * 创建间奏圆点 DOM 结构
- *
  * @param parentElement - 父容器
  * @returns [圆点容器, 三个圆点元素]
  */
@@ -96,9 +92,7 @@ export const createInterludeDots = (
 
 /**
  * 渲染间奏圆点动画
- *
  * 包含入场（缩放 + 淡入）、呼吸（正弦波缩放）和退场（回弹缩放 + 淡出）三个阶段
- *
  * @param currentTime - 当前播放时间（毫秒）
  * @param state - 间奏状态
  * @param dotsContainer - 圆点容器元素

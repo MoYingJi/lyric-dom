@@ -34,6 +34,8 @@ export const shouldEmphasize = (word: LyricWord, minDuration = 1000): boolean =>
 
 /**
  * 判断一组 chunk 是否应该启用强调效果
+ * @param chunk - 同组单词数组
+ * @param minDuration - 最小持续时间（毫秒）
  */
 export const shouldChunkEmphasize = (chunk: LyricWord[], minDuration = 1000): boolean => {
   if (chunk.some((w) => shouldEmphasize(w, minDuration))) return true;
@@ -51,11 +53,11 @@ export const shouldChunkEmphasize = (chunk: LyricWord[], minDuration = 1000): bo
 
 /**
  * 为单个单词 span 创建基础上浮动画（所有单词通用）
- *
  * @param wordEl - 单词 span 元素
  * @param delay - 相对行起始的延迟（ms）
  * @param duration - 动画持续时间（ms）
  * @param isBG - 是否为背景行
+ * @returns 动画实例
  */
 export const createFloatAnimation = (
   wordEl: HTMLElement,
@@ -85,12 +87,12 @@ export const createFloatAnimation = (
 
 /**
  * 为强调单词的每个字符创建 glow + 正弦浮动动画
- *
  * @param charElements - 字符级 span 元素数组
  * @param duration - 合并后单词的总持续时间（ms）
  * @param delay - 相对行起始的延迟（ms）
  * @param isLastWord - 是否为行末单词（增强效果）
  * @param isBG - 是否为背景行
+ * @returns 动画实例数组
  */
 export const createEmphasizeAnimations = (
   charElements: HTMLElement[],

@@ -1,6 +1,6 @@
 /** 单词 span 构建与掩码测量 */
 
-import type { LyricLine, LyricWord, WordAnimTarget, WordMeasurement } from "../types";
+import type { LyricLine, LyricSpan, LyricWord, WordAnimTarget, WordMeasurement } from "../types";
 import { chunkAndSplitLyricWords, needsSpaceBetween } from "../utils/split-words";
 import { shouldChunkEmphasize } from "./emphasize";
 
@@ -11,16 +11,29 @@ export interface BuildResult {
   measurements: WordMeasurement[];
   animTargets: WordAnimTarget[];
 }
+/** 单词构建选项 */
+export interface WordBuildOptions {
+  /** 是否启用强调效果 */
+  enableEmphasizeEffect: boolean;
+  /** 触发强调效果的最小持续时间（毫秒） */
+  emphasizeMinDuration: number;
+  /** 是否显示词内注音 */
+  showRuby: boolean;
+}
 
 /**
  * 构建单词 span 元素并添加到主容器
+ * @param words - 歌词单词数组
+ * @param mainDiv - 挂载目标容器
+ * @param options - 单词构建选项
+ * @returns 测量数据与动画目标
  */
 export const buildWordSpans = (
   words: LyricWord[],
   mainDiv: HTMLDivElement,
-  enableEmphasize = true,
-  emphasizeMinDuration = 1000,
+  options: WordBuildOptions,
 ): BuildResult => {
+  const { enableEmphasizeEffect: enableEmphasize, emphasizeMinDuration, showRuby } = options;
   const chunks = chunkAndSplitLyricWords(words);
   const measurements: WordMeasurement[] = [];
   const animTargets: WordAnimTarget[] = [];
@@ -56,17 +69,7 @@ export const buildWordSpans = (
         for (const atom of atoms) {
           const text = atom.word.trim();
           if (!text) continue;
-          const span = document.createElement("span");
-          span.textContent = text;
-          mainDiv.appendChild(span);
-          measurements.push({ element: span, word: atom, width: 0, fadeWidth: 0 });
-          animTargets.push({
-            element: span,
-            word: atom,
-            isEmphasize: false,
-            charElements: [],
-            isLastWord: false,
-          });
+          appendWordSpan(atom, mainDiv, measurements, animTargets, showRuby);
         }
       }
       const lastAtom = atoms[atoms.length - 1];
@@ -95,17 +98,7 @@ export const buildWordSpans = (
       } else {
         for (let wIdx = 0; wIdx < chunk.length; wIdx++) {
           const word = chunk[wIdx];
-          const span = document.createElement("span");
-          span.textContent = word.word;
-          mainDiv.appendChild(span);
-          measurements.push({ element: span, word, width: 0, fadeWidth: 0 });
-          animTargets.push({
-            element: span,
-            word,
-            isEmphasize: false,
-            charElements: [],
-            isLastWord: false,
-          });
+          appendWordSpan(word, mainDiv, measurements, animTargets, showRuby);
           if (word.endsWithSpace && wIdx < chunk.length - 1) {
             mainDiv.appendChild(document.createTextNode(" "));
           }
@@ -136,17 +129,7 @@ export const buildWordSpans = (
       if (isEmp) {
         buildEmphasizedChunk([chunk], mainDiv, measurements, animTargets, isLast);
       } else {
-        const span = document.createElement("span");
-        span.textContent = text.trim();
-        mainDiv.appendChild(span);
-        measurements.push({ element: span, word: chunk, width: 0, fadeWidth: 0 });
-        animTargets.push({
-          element: span,
-          word: chunk,
-          isEmphasize: false,
-          charElements: [],
-          isLastWord: false,
-        });
+        appendWordSpan(chunk, mainDiv, measurements, animTargets, showRuby);
       }
 
       if (text.trimEnd() !== text || chunk.endsWithSpace) {
@@ -161,15 +144,82 @@ export const buildWordSpans = (
 };
 
 /**
- * 构建强调单词 chunk（纯 DOM，不创建动画）
+ * 创建普通单词 span（含 ruby 注音）并挂载
+ * @param word - 单词数据
+ * @param mainDiv - 挂载目标容器
+ * @param measurements - 测量数据输出数组
+ * @param animTargets - 动画目标输出数组
+ * @param showRuby - 是否渲染注音
  */
-function buildEmphasizedChunk(
+const appendWordSpan = (
+  word: LyricWord,
+  mainDiv: HTMLDivElement,
+  measurements: WordMeasurement[],
+  animTargets: WordAnimTarget[],
+  showRuby: boolean,
+) => {
+  const span = document.createElement("span");
+  const ruby = showRuby ? word.ruby : undefined;
+  if (ruby?.length) {
+    buildRubyContent(span, word.word, ruby);
+  } else {
+    span.textContent = word.word;
+  }
+  mainDiv.appendChild(span);
+  measurements.push({ element: span, word, width: 0, fadeWidth: 0 });
+  animTargets.push({
+    element: span,
+    word,
+    isEmphasize: false,
+    charElements: [],
+    isLastWord: false,
+  });
+};
+
+/**
+ * 构建注音内容
+ * ruby 片段数与词字符数一致时逐字配对，否则整词标注
+ * @param span - 注音挂载的单词 span
+ * @param text - 单词文本
+ * @param ruby - 注音片段列表
+ */
+const buildRubyContent = (span: HTMLSpanElement, text: string, ruby: LyricSpan[]) => {
+  const chars = Array.from(text);
+  const validRuby = ruby.filter((r) => r.word.trim());
+  if (validRuby.length === chars.length) {
+    for (let i = 0; i < chars.length; i++) {
+      const rubyEl = document.createElement("ruby");
+      rubyEl.textContent = chars[i];
+      const rt = document.createElement("rt");
+      rt.textContent = validRuby[i].word;
+      rubyEl.appendChild(rt);
+      span.appendChild(rubyEl);
+    }
+  } else {
+    const rubyEl = document.createElement("ruby");
+    rubyEl.textContent = text;
+    const rt = document.createElement("rt");
+    rt.textContent = validRuby.map((r) => r.word).join("");
+    rubyEl.appendChild(rt);
+    span.appendChild(rubyEl);
+  }
+};
+
+/**
+ * 构建强调单词 chunk
+ * @param atoms - 合并前的同组单词
+ * @param mainDiv - 挂载目标容器
+ * @param measurements - 测量数据输出数组
+ * @param animTargets - 动画目标输出数组
+ * @param isLastWord - 是否为行末单词
+ */
+const buildEmphasizedChunk = (
   atoms: LyricWord[],
   mainDiv: HTMLDivElement,
   measurements: WordMeasurement[],
   animTargets: WordAnimTarget[],
   isLastWord: boolean,
-) {
+) => {
   const mergedWord: LyricWord = {
     word: atoms.map((a) => a.word).join(""),
     startTime: Math.min(...atoms.map((a) => a.startTime)),
@@ -198,13 +248,15 @@ function buildEmphasizedChunk(
     charElements,
     isLastWord,
   });
-}
+};
 
 /**
  * 测量所有单词的宽度并设置 CSS 掩码
- *
  * 采用读写分离策略：第一遍批量读取所有 DOM 尺寸（触发一次回流），
  * 第二遍批量写入所有 CSS mask 样式（零回流），避免逐词读写交替导致的 N 次强制回流。
+ * @param wordMeasurements - 每行的单词测量数据
+ * @param fadeRatio - 渐变区域宽度比例
+ * @param lines - 歌词行数组，提供行起始时间
  */
 export const measureAndApplyWordMasks = (
   wordMeasurements: WordMeasurement[][],

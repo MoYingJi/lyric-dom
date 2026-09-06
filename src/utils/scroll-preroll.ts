@@ -9,11 +9,9 @@ export const DEFAULT_SCROLL_PREROLL_OPTIONS: Required<ScrollPrerollOptions> = {
 
 /**
  * 滚动预滚：提前行开始时间，让滚动渲染器在开唱前先把视野滚到位
- *
  * 判定一律基于各行的原始时间（修改不影响后续行的判定）。
  * 相互重叠的连续主行（对唱段）合并为组，无重叠行的提前边界取组的最晚结束时间，
  * 避免把行提前进还在演唱中的对唱组。
- *
  * @param sourceLines - 规范化后的歌词行数组
  * @param options - 自定义提前量与重叠比例参数
  * @returns 应用预滚后的克隆行数组

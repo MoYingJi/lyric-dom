@@ -15,6 +15,7 @@ export interface DemoState extends Record<string, unknown> {
   emphasizeMinDuration: number;
   showTranslation: boolean;
   showRomanization: boolean;
+  showRuby: boolean;
   enableScrollPreroll: boolean;
   scrollResetDelay: number;
   seekForwardThreshold: number;
@@ -38,6 +39,7 @@ export const createInitialState = (): DemoState => ({
   emphasizeMinDuration: DEFAULTS.emphasizeMinDuration,
   showTranslation: DEFAULTS.showTranslation,
   showRomanization: DEFAULTS.showRomanization,
+  showRuby: DEFAULTS.showRuby,
   enableScrollPreroll: DEFAULTS.enableScrollPreroll,
   scrollResetDelay: DEFAULTS.scrollResetDelay,
   seekForwardThreshold: DEFAULTS.seekForwardThreshold,
@@ -53,6 +55,7 @@ export const REBUILD_KEYS = new Set([
   "emphasizeMinDuration",
   "showTranslation",
   "showRomanization",
+  "showRuby",
   "enableScrollPreroll",
 ]);
 
@@ -82,6 +85,7 @@ export const CONTROL_DEFS: ControlDef<DemoState>[] = [
   },
   { key: "showTranslation", label: "显示翻译", type: "toggle" },
   { key: "showRomanization", label: "显示音译", type: "toggle" },
+  { key: "showRuby", label: "显示注音", type: "toggle" },
   { type: "group", label: "滚动与优化" },
   { key: "enableScrollPreroll", label: "滚动提前预滚", type: "toggle" },
   { key: "scrollResetDelay", label: "回弹延迟", type: "range", min: 0, max: 15000, step: 500 },

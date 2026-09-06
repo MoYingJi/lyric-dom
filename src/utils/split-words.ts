@@ -4,6 +4,8 @@ const CJK_RE = /^[\p{Unified_Ideograph}぀-ヿ]+$/u;
 
 /**
  * 判断字符串是否全部为 CJK（中日韩统一表意文字）
+ * @param char - 待判断字符串
+ * @returns 是否全部为 CJK
  */
 export const isCJK = (char: string): boolean => CJK_RE.test(char);
 
@@ -150,9 +152,7 @@ const LETTER_OR_DIGIT_RE = /[\p{L}\p{N}]/u;
 
 /**
  * 判断两个相邻文本之间是否需要插入空格
- *
- * CJK 字符之间不需要空格，非 CJK 的字母/数字之间需要空格。
- *
+ * CJK 字符之间不需要空格，非 CJK 的字母/数字之间需要空格
  * @param prevText - 前一个文本
  * @param nextText - 后一个文本
  * @returns 是否需要空格

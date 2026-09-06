@@ -17,11 +17,9 @@ const derivative = (fn: (x: number) => number) => (x: number) =>
 
 /**
  * 求解弹簧运动方程，返回位置关于时间的函数
- *
  * 根据阻尼比自动选择过阻尼或欠阻尼求解器：
  * - 过阻尼（ζ ≥ 1）：指数衰减，无振荡
  * - 欠阻尼（ζ < 1）：衰减振荡
- *
  * @param fromPos - 起始位置
  * @param velocity - 初始速度
  * @param toPos - 目标位置
@@ -72,7 +70,6 @@ const solveSpring = (
 
 /**
  * 弹簧动画实例
- *
  * 封装弹簧运动求解器，支持：
  * - 设置目标位置（带可选延迟）
  * - 动态更新弹簧参数
@@ -111,9 +108,7 @@ export class Spring {
 
   /**
    * 重建求解器
-   *
-   * 基于当前位置、速度和目标位置重新构建弹簧运动方程。
-   * 在目标位置或参数变化时调用。
+   * 基于当前位置、速度和目标位置重新构建弹簧运动方程，在目标位置或参数变化时调用
    */
   private rebuildSolver = () => {
     const currentVelocity = this.velocitySolver(this.elapsedTime);
@@ -132,13 +127,11 @@ export class Spring {
 
   /**
    * 判断弹簧是否已到达稳定状态
-   *
    * 满足以下所有条件时视为稳定：
    * - 与目标位置差值 < 0.01
    * - 速度 < 0.01
    * - 加速度 < 0.01
    * - 无排队中的更新
-   *
    * @returns 是否已稳定
    */
   arrived = (): boolean => {
@@ -159,9 +152,7 @@ export class Spring {
 
   /**
    * 立即设置位置（无动画，直接跳转）
-   *
-   * 同时清除所有排队中的更新，将弹簧标记为稳定状态。
-   *
+   * 同时清除所有排队中的更新，将弹簧标记为稳定状态
    * @param position - 目标位置
    */
   setPosition = (position: number) => {
@@ -177,9 +168,7 @@ export class Spring {
 
   /**
    * 推进弹簧状态
-   *
-   * 在每帧调用，更新弹簧位置并处理排队中的延迟操作。
-   *
+   * 在每帧调用，更新弹簧位置并处理排队中的延迟操作
    * @param deltaMs - 帧间隔时间 (ms)
    */
   update = (deltaMs = 0) => {
@@ -207,9 +196,7 @@ export class Spring {
 
   /**
    * 更新弹簧参数
-   *
-   * 可选延迟执行，延迟期间弹簧标记为非稳定以保持帧循环运行。
-   *
+   * 可选延迟执行，延迟期间弹簧标记为非稳定以保持帧循环运行
    * @param params - 弹簧参数（部分更新）
    * @param delay - 延迟时间 (ms)，0 表示立即生效
    */
@@ -230,9 +217,7 @@ export class Spring {
 
   /**
    * 设置目标位置（带弹簧动画过渡）
-   *
-   * 可选延迟执行，弹簧将从当前位置和速度平滑过渡到新目标。
-   *
+   * 可选延迟执行，弹簧将从当前位置和速度平滑过渡到新目标
    * @param position - 新目标位置
    * @param delay - 延迟时间 (ms)，0 表示立即生效
    */

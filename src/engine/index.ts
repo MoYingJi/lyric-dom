@@ -23,7 +23,7 @@ export type { RendererConfig } from "../types";
 export class LyricRenderer {
   /** 外层容器 */
   private container: HTMLElement;
-  /** 内部包裹层，承载所有歌词行和间奏圆点 */
+  /** 承载所有歌词行和间奏圆点的包裹层 */
   private innerElement: HTMLDivElement;
   /** 间奏呼吸圆点容器 */
   private dotsContainer!: HTMLDivElement;
@@ -34,28 +34,27 @@ export class LyricRenderer {
   private lines: LyricLine[] = [];
   /** 每行对应的 DOM 元素 */
   private lineElements: HTMLDivElement[] = [];
-  /** 每行的单词测量数据（用于 CSS mask 计算） */
+  /** 每行的单词测量数据 */
   private wordMeasurements: WordMeasurement[][] = [];
-  /** 每行的动画目标描述（懒创建动画的依据） */
+  /** 每行的单词动画目标 */
   private lineAnimTargets: WordAnimTarget[][] = [];
   /** 行级 Web Animations 生命周期管理 */
   private lineAnimations = new LineAnimationController((lineIndex) =>
     this.activeLineSet.has(lineIndex),
   );
-  /** 标记背景人声行是否应置于主行上方 */
+  /** 背景人声行是否置于主行上方 */
   private isBgAbove: boolean[] = [];
-  /** 每行所属组合的起始时间（主行与背景行生命周期对齐） */
+  /** 主行与背景行联合生命周期窗（对齐淡入淡出时机） */
   private pairStartTime: Float64Array = new Float64Array(0);
-  /** 每行所属组合的结束时间（主行与背景行生命周期对齐） */
   private pairEndTime: Float64Array = new Float64Array(0);
-  /** 每行配对的伴侣行索引（无伴侣为 -1） */
+  /** 每行配对的伴侣行索引，无伴侣为 -1 */
   private pairPartnerIndex: Int32Array = new Int32Array(0);
 
-  /** 当前主激活行索引（多行激活时取最小） */
+  /** 当前主激活行索引，多行激活时取最小 */
   private activeLineIndex = -1;
   /** 所有激活行索引集合 */
   private activeLineSet = new Set<number>();
-  /** 上一次处理的播放时间，用于 seek 检测 */
+  /** 上一次处理的播放时间，seek 检测基准 */
   private lastProcessedTime = -1;
   /** processTime 复用缓冲，避免每帧分配 */
   private activatedBuffer: number[] = [];
@@ -63,33 +62,32 @@ export class LyricRenderer {
 
   /** 每行的 Y 轴位置弹簧 */
   private positionSprings: Spring[] = [];
-  /** 每行的缩放弹簧（值域 0~100，对应 0~1 的 scale） */
+  /** 每行的缩放弹簧，值域 0~100 对应 0~1 的 scale */
   private scaleSprings: Spring[] = [];
 
-  /** 每行的高度缓存（offsetHeight） */
+  /** 每行高度缓存 */
   private lineHeights: Float64Array = new Float64Array(0);
-  /** 容器宽度 */
+  /** 容器尺寸 */
   private containerWidth = 0;
-  /** 容器高度 */
   private containerHeight = 0;
 
-  /** 每行的透明度值（当前插值），驱动 --ba / --da CSS 变量 */
+  /** 透明度插值，驱动 --ba / --da */
   private alphaValues: Float64Array = new Float64Array(0);
-  /** 每行的模糊值（当前插值），驱动 --blur CSS 变量 */
+  /** 模糊插值，驱动 --blur */
   private blurValues: Float64Array = new Float64Array(0);
-  /** 已播放行淡出值，驱动 --pass CSS 变量（用于副歌词透明度） */
+  /** 已播行淡出值，驱动 --pass */
   private passValues: Float64Array = new Float64Array(0);
-  /** --pass 写入缓存，避免重复 DOM 写入 */
+  /** --pass 写入缓存 */
   private cachedPassKeys: string[] = [];
 
-  /** 入场动画是否已全部完成（完成后跳过计算） */
+  /** 入场动画完成后跳过相关计算 */
   private entranceComplete = true;
 
-  /** 用户手动滚动的偏移量（px） */
+  /** 用户手动滚动偏移量 */
   private userScrollOffset = 0;
   /** 是否处于用户滚动状态 */
   private isUserScrolling = false;
-  /** 鼠标是否悬停在容器上（悬停时抑制模糊） */
+  /** 悬停时抑制模糊 */
   private isHovering = false;
   /** 滚动回弹定时器 ID */
   private scrollResetTimerId = 0;
@@ -112,33 +110,31 @@ export class LyricRenderer {
     containerStyle: "",
     dotOpacities: ["", "", ""],
   };
-  /** 间奏圆点容器宽度 */
+  /** 间奏圆点容器尺寸 */
   private dotsContainerWidth = 0;
-  /** 间奏圆点容器高度 */
   private dotsContainerHeight = 0;
 
   /** rAF 句柄，0 表示未运行 */
   private animationFrameId = 0;
-  /** 掩码计算的延迟 rAF 句柄 */
+  /** 掩码计算延迟 rAF 句柄 */
   private maskRafId = 0;
-  /** 上一帧的时间戳，用于计算 deltaTime */
+  /** 上一帧时间戳，用于计算 deltaTime */
   private lastFrameTimestamp = 0;
-  /** 页面是否可见（不可见时跳过渲染） */
+  /** 页面是否可见 */
   private isPageVisible = true;
-  /** 是否需要强制全量同步（跳过视口裁剪） */
+  /** 跳过视口裁剪，下一帧全量同步 */
   private needsFullSync = false;
-  /** 长时间隐藏/冻结恢复后，下一次检测到时间跳变时瞬移布局而非弹簧过渡 */
+  /** 隐藏/冻结恢复后，下一次时间跳变时瞬移布局而非弹簧过渡 */
   private snapNextSeek = false;
-  /** 页面隐藏期间缓冲的歌词数据，恢复可见时一次性应用 */
+  /** 页面隐藏期间缓冲的歌词，恢复可见时应用 */
   private pendingHiddenLyrics: LyricLine[] | null = null;
   /** 外部推送的待消费播放时间 */
   private pendingPlayTime = -1;
 
-  /** transform 缓存 */
+  /** transform 写入缓存 */
   private cachedTransforms: string[] = [];
-  /** 每行是否已挂 will-change */
   private lineWillChange: boolean[] = [];
-  /** 每行是否已被视口裁剪 */
+  /** 视口裁剪标记 */
   private lineCulled: boolean[] = [];
   /** bottom-line 是否已挂 will-change */
   private bottomWillChange = false;
@@ -187,6 +183,8 @@ export class LyricRenderer {
   private showTranslation = DEFAULTS.showTranslation;
   /** 是否显示音译歌词 */
   private showRomanization = DEFAULTS.showRomanization;
+  /** 是否显示词内注音（ruby） */
+  private showRuby = DEFAULTS.showRuby;
   /** 原始歌词数据（未应用滚动预滚前，用于动态开关预滚时重新计算） */
   private rawLines: LyricLine[] = [];
   /** 是否启用滚动提前预滚优化 */
@@ -217,6 +215,7 @@ export class LyricRenderer {
   private cachedBottomTransform = "";
 
   /**
+   * 歌词渲染器
    * @param container - 外层容器元素
    * @param config - 可选的初始配置
    */
@@ -415,6 +414,7 @@ export class LyricRenderer {
       emphasizeMinDuration: this.emphasizeMinDuration,
       showTranslation: this.showTranslation,
       showRomanization: this.showRomanization,
+      showRuby: this.showRuby,
     });
     this.lineElements = built.lineElements;
     this.wordMeasurements = built.wordMeasurements;
@@ -521,6 +521,13 @@ export class LyricRenderer {
       this.enableEmphasizeEffect = config.enableEmphasizeEffect;
     if (config.showTranslation != null) this.showTranslation = config.showTranslation;
     if (config.showRomanization != null) this.showRomanization = config.showRomanization;
+    if (config.showRuby != null && config.showRuby !== this.showRuby) {
+      this.showRuby = config.showRuby;
+      if (this.rawLines.length > 0) {
+        this.setLyrics(this.rawLines);
+        return;
+      }
+    }
     if (
       config.enableScrollPreroll != null &&
       config.enableScrollPreroll !== this.enableScrollPreroll
@@ -696,7 +703,6 @@ export class LyricRenderer {
 
   /**
    * 将所有行的透明度 / pass 直接同步到目标值
-   *
    * 视口裁剪会让屏外行的插值冻结在旧值（如长期保持激活态的高亮），
    * 隐藏/冻结恢复后的瞬移布局可能把这些行直接带回视口，需一次性对齐
    */

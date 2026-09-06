@@ -53,6 +53,7 @@ const renderer = new LyricRenderer(container, {
   emphasizeMinDuration: state.emphasizeMinDuration,
   showTranslation: state.showTranslation,
   showRomanization: state.showRomanization,
+  showRuby: state.showRuby,
   enableScrollPreroll: state.enableScrollPreroll,
   scrollResetDelay: state.scrollResetDelay,
   seekForwardThreshold: state.seekForwardThreshold,

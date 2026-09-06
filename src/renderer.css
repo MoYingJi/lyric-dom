@@ -144,6 +144,16 @@
     vertical-align: bottom;
   }
 
+  ruby {
+    ruby-position: over;
+
+    & rt {
+      font-size: var(--lp-ruby-font-size, 0.5em);
+      line-height: var(--lp-ruby-line-height, 1em);
+      color: var(--lp-ruby-color, inherit);
+    }
+  }
+
   /* 强调单词包裹层 */
   & > span.lp-emp-wrapper {
     display: inline-block;

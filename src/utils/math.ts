@@ -34,9 +34,7 @@ export const easeOutExpo = (progress: number): number =>
 
 /**
  * 从 Set<number> 中找到最小值
- *
- * 避免使用 Math.min(...set) 展开大集合的开销。
- *
+ * 避免使用 Math.min(...set) 展开大集合的开销
  * @param set - 数字集合
  * @returns 最小值，集合为空时返回 -1
  */

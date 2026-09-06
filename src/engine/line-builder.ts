@@ -3,14 +3,15 @@
  */
 
 import type { LyricLine } from "../types";
-import { buildWordSpans, type WordAnimTarget, type WordMeasurement } from "./word-builder";
+import {
+  buildWordSpans,
+  type WordAnimTarget,
+  type WordBuildOptions,
+  type WordMeasurement,
+} from "./word-builder";
 
 /** 行 DOM 构建选项 */
-export interface LineBuildOptions {
-  /** 是否启用强调效果（影响 span 结构） */
-  enableEmphasizeEffect: boolean;
-  /** 触发强调效果的最小持续时间（毫秒） */
-  emphasizeMinDuration?: number;
+export interface LineBuildOptions extends WordBuildOptions {
   /** 是否显示翻译歌词 */
   showTranslation: boolean;
   /** 是否显示音译歌词 */
@@ -19,15 +20,11 @@ export interface LineBuildOptions {
 
 /** 行 DOM 构建结果 */
 export interface LineBuildResult {
-  /** 每行对应的 DOM 元素 */
   lineElements: HTMLDivElement[];
-  /** 每行的单词测量数据（用于 CSS mask 计算） */
   wordMeasurements: WordMeasurement[][];
-  /** 每行的动画目标描述（懒创建动画的依据） */
   lineAnimTargets: WordAnimTarget[][];
   /** 标记背景人声行是否应置于主行上方 */
   isBgAbove: boolean[];
-  /** 装载所有行元素的文档片段 */
   fragment: DocumentFragment;
 }
 
@@ -85,12 +82,11 @@ export const buildLineElements = (
       lineAnimTargets[i] = [];
     } else {
       // 构建单词 span + 动画目标描述
-      const result = buildWordSpans(
-        line.words,
-        mainDiv,
-        options.enableEmphasizeEffect,
-        options.emphasizeMinDuration,
-      );
+      const result = buildWordSpans(line.words, mainDiv, {
+        enableEmphasizeEffect: options.enableEmphasizeEffect,
+        emphasizeMinDuration: options.emphasizeMinDuration ?? 1000,
+        showRuby: options.showRuby,
+      });
       wordMeasurements[i] = result.measurements;
       lineAnimTargets[i] = result.animTargets;
     }
