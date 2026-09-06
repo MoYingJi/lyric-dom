@@ -1,10 +1,4 @@
-/**
- * 逐字上浮与强调动画
- *
- * 基于 Web Animations API，为激活行的单词添加：
- * 1. 基础上浮（所有单词）：播放期间缓慢上移 0.05em
- * 2. 强调效果（长音节单词）：缩放 + 辉光 + 正弦浮动 + 逐字符延迟
- */
+/** 逐字上浮与长音节强调动画 */
 
 import type { LyricWord } from "../types";
 import { isCJK } from "../utils/split-words";
@@ -22,17 +16,13 @@ const normalize = (min: number, max: number, x: number) =>
 const empEasing = (x: number): number =>
   x < EMP_MID ? smoothstep(normalize(0, EMP_MID, x)) : 1 - smoothstep(normalize(EMP_MID, 1, x));
 
-// ---- matrix3d 工具 ----
-
 const scaleMatrix3dCSS = (s: number): string =>
   `matrix3d(${s},0,0,0,0,${s},0,0,0,0,${s},0,0,0,0,1)`;
 
-// ---- 公共 API ----
-
 /**
- * 判断单词是否应该启用强调效果
- * - CJK：持续时间 ≥ minDuration（默认 1000ms）
- * - 非 CJK：持续时间 ≥ minDuration 且长度 2~7
+ * 判断单词是否达到强调效果时长阈值
+ * @param word - 歌词单词
+ * @param minDuration - 最小持续时间（毫秒）
  */
 export const shouldEmphasize = (word: LyricWord, minDuration = 1000): boolean => {
   const duration = word.endTime - word.startTime;
@@ -136,7 +126,7 @@ export const createEmphasizeAnimations = (
     const el = charElements[i];
     const wordDe = de + (du / 2.5 / charCount) * i;
 
-    // 1. Glow + Scale + Translate 动画
+    // 辉光、缩放与位移动画帧
     const glowFrames: Keyframe[] = new Array(FRAME_COUNT).fill(0).map((_, j) => {
       const x = (j + 1) / FRAME_COUNT;
       const transX = empEasing(x);

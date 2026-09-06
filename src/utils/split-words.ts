@@ -38,14 +38,9 @@ const makeAtom = (
 });
 
 /**
- * 将歌词单词列表重新分组：CJK 字符逐字拆分，并通过 Intl.Segmenter 进行多语言分词。
- *
- * 处理流程：
- * 1. 按空格拆分每个单词，CJK 多字词再逐字拆开，按比例分配时间
- * 2. 若浏览器支持 Intl.Segmenter，将原子按词边界重新分组
- *
+ * 将歌词单词重新分组：CJK 字符逐字拆分，并通过 Intl.Segmenter 按语言词边界合并
  * @param words - 原始歌词单词数组
- * @returns 分组后的单词/单词组数组，单元素为 LyricWord，多元素组为 LyricWord[]
+ * @returns 分组后的单词或单词组数组
  */
 export const chunkAndSplitLyricWords = (words: LyricWord[]): (LyricWord | LyricWord[])[] => {
   const atoms: LyricWord[] = [];

@@ -1,46 +1,19 @@
-/**
- * 歌词渲染引擎 — 单词 span 构建与掩码测量
- */
+/** 单词 span 构建与掩码测量 */
 
-import type { LyricLine, LyricWord } from "../types";
+import type { LyricLine, LyricWord, WordAnimTarget, WordMeasurement } from "../types";
 import { chunkAndSplitLyricWords, needsSpaceBetween } from "../utils/split-words";
 import { shouldChunkEmphasize } from "./emphasize";
 
-/** 单个歌词单词的 DOM 元素与测量数据 */
-export interface WordMeasurement {
-  /** 对应的 span 元素 */
-  element: HTMLSpanElement;
-  /** 歌词单词数据 */
-  word: LyricWord;
-  /** 元素宽度（px） */
-  width: number;
-  /** 渐变区域宽度（px） */
-  fadeWidth: number;
-}
+export type { WordAnimTarget, WordMeasurement };
 
-/** 描述一个需要动画的单词（用于懒创建动画） */
-export interface WordAnimTarget {
-  /** 应用 float 动画的元素 */
-  element: HTMLElement;
-  /** 时间数据 */
-  word: LyricWord;
-  /** 是否为强调词 */
-  isEmphasize: boolean;
-  /** 强调词的字符级 span（非强调词为空数组） */
-  charElements: HTMLElement[];
-  /** 是否为行末单词 */
-  isLastWord: boolean;
-}
-
-/** buildWordSpans 的返回结果 */
+/** buildWordSpans 返回结果 */
 export interface BuildResult {
   measurements: WordMeasurement[];
-  /** 懒创建动画所需的目标描述 */
   animTargets: WordAnimTarget[];
 }
 
 /**
- * 构建单词 span 元素并添加到主容器（纯 DOM 构建，不创建动画）
+ * 构建单词 span 元素并添加到主容器
  */
 export const buildWordSpans = (
   words: LyricWord[],
@@ -241,7 +214,7 @@ export const measureAndApplyWordMasks = (
   // 临时存储每个 measurement 的 padding，供第二遍使用
   const paddings: number[][] = new Array(wordMeasurements.length);
 
-  // ===== 第一遍：批量读取 DOM 尺寸（一次回流） =====
+  // 批量读取 DOM 尺寸（合并回流）
   for (let i = 0; i < wordMeasurements.length; i++) {
     const lineMeasurements = wordMeasurements[i];
     if (!lineMeasurements) {
@@ -261,7 +234,7 @@ export const measureAndApplyWordMasks = (
     }
   }
 
-  // ===== 第二遍：批量写入 CSS mask 样式（零回流） =====
+  // 批量写入 CSS mask 样式
   for (let i = 0; i < wordMeasurements.length; i++) {
     const lineMeasurements = wordMeasurements[i];
     const lineStart = lines?.[i]?.startTime ?? 0;

@@ -116,10 +116,7 @@ export class LineAnimationController {
   };
 
   /**
-   * 行停用：
-   * - float 反向播放实现平滑回落
-   * - glow/scale 保持当前状态，随行透明度自然淡出
-   * - 动画完成后自动清理，避免累积
+   * 停用指定行的动画并触发回落与清理
    * @param lineIndex - 行索引
    */
   deactivate = (lineIndex: number) => {
