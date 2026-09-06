@@ -1,7 +1,7 @@
 /** 面板控件定义 */
-export interface ControlDef {
+export interface ControlDef<T extends Record<string, unknown>> {
   /** 状态对象中的键；group 类型时省略 */
-  key?: string;
+  key?: keyof T & string;
   label: string;
   type: "group" | "toggle" | "range";
   min?: number;
@@ -17,49 +17,59 @@ export interface ControlDef {
  * @param defs - 控件定义列表
  * @param onChange - 值变化回调，参数为对应的 key
  */
-export const buildPanel = (
+export const buildPanel = <T extends Record<string, unknown>>(
   root: HTMLElement,
-  state: Record<string, any>,
-  defs: ControlDef[],
-  onChange: (key: string) => void,
+  state: T,
+  defs: ControlDef<T>[],
+  onChange: (key: keyof T & string) => void,
 ): void => {
+  root.innerHTML = "";
   for (const def of defs) {
     if (def.type === "group") {
       const heading = document.createElement("h3");
+      heading.className = "ctl-group-title";
       heading.textContent = def.label;
       root.appendChild(heading);
       continue;
     }
 
+    if (!def.key) continue;
+
+    const key = def.key;
     const row = document.createElement("label");
     row.className = "ctl";
     const labelText = document.createElement("span");
+    labelText.className = "ctl-label";
     labelText.textContent = def.label;
     row.appendChild(labelText);
 
     if (def.type === "toggle") {
       const input = document.createElement("input");
       input.type = "checkbox";
-      input.checked = Boolean(state[def.key!]);
+      input.className = "ctl-toggle";
+      input.checked = Boolean(state[key]);
       input.addEventListener("change", () => {
-        state[def.key!] = input.checked;
-        onChange(def.key!);
+        (state as Record<string, unknown>)[key] = input.checked;
+        onChange(key);
       });
       row.appendChild(input);
     } else {
       const input = document.createElement("input");
       input.type = "range";
+      input.className = "ctl-range";
       input.min = String(def.min ?? 0);
       input.max = String(def.max ?? 1);
       input.step = String(def.step ?? 1);
-      input.value = String(state[def.key!]);
+      input.value = String(state[key]);
+
       const valueText = document.createElement("span");
       valueText.className = "ctl-value";
       valueText.textContent = input.value;
+
       input.addEventListener("input", () => {
-        state[def.key!] = Number.parseFloat(input.value);
+        (state as Record<string, unknown>)[key] = Number.parseFloat(input.value);
         valueText.textContent = input.value;
-        onChange(def.key!);
+        onChange(key);
       });
       row.append(input, valueText);
     }

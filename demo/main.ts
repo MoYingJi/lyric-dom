@@ -1,129 +1,159 @@
 import { applyScrollPreroll, LyricRenderer } from "../src";
-import { DEMO_LYRICS, TOTAL_DURATION } from "./lyrics";
-import { buildPanel, type ControlDef } from "./panel";
+import type { LyricLine } from "../src/types";
+import { CONTROL_DEFS, createInitialState, type DemoState, REBUILD_KEYS } from "./config";
+import { parseLyricFile } from "./importer";
+import { buildPanel } from "./panel";
+import { DemoPlayer } from "./player";
 import "../src/renderer.css";
 import "./style.css";
 
+// ---- DOM 元素 ----
 const container = document.getElementById("lyrics-container") as HTMLDivElement;
+const emptyPlaceholder = document.getElementById("empty-placeholder") as HTMLDivElement;
+const audio = document.getElementById("audio") as HTMLAudioElement;
+const playBtn = document.getElementById("play-btn") as HTMLButtonElement;
+const timeLabel = document.getElementById("time-label") as HTMLSpanElement;
+const timeSlider = document.getElementById("time-slider") as HTMLInputElement;
+const rateSelect = document.getElementById("rate-select") as HTMLSelectElement;
+const volumeSlider = document.getElementById("volume-slider") as HTMLInputElement;
 
-/** 虚拟播放时钟 */
-const clock = { current: 0, playing: false, rate: 1 };
+const audioFileInput = document.getElementById("audio-file") as HTMLInputElement;
+const lyricFileInput = document.getElementById("lyric-file") as HTMLInputElement;
+const audioInfo = document.getElementById("audio-info") as HTMLSpanElement;
+const lyricInfo = document.getElementById("lyric-info") as HTMLSpanElement;
+
+// ---- 状态与引擎 ----
+const state: DemoState = createInitialState();
+let currentLines: LyricLine[] = [];
+let isDraggingSlider = false;
+
+const formatTime = (ms: number): string => {
+  const safe = Math.max(0, ms);
+  const sec = Math.floor(safe / 1000);
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+};
+
+const player = new DemoPlayer(audio, (playing) => {
+  playBtn.textContent = playing ? "暂停" : "播放";
+  renderer.setPlaying(playing);
+});
 
 const renderer = new LyricRenderer(container, {
   playing: false,
+  alignPosition: state.alignPosition,
+  wordFadeWidth: state.wordFadeWidth,
+  enableWordHighlight: state.enableWordHighlight,
+  minInterludeGap: state.minInterludeGap,
+  breatheCycleTarget: state.breatheCycleTarget,
+  alphaAttackSpeed: state.alphaAttackSpeed,
+  alphaReleaseSpeed: state.alphaReleaseSpeed,
+  inactiveAlpha: state.inactiveAlpha,
+  hidePassedLines: state.hidePassedLines,
+  enableBlur: state.enableBlur,
+  enableFloatAnimation: state.enableFloatAnimation,
+  enableEmphasizeEffect: state.enableEmphasizeEffect,
+  showTranslation: state.showTranslation,
+  showRomanization: state.showRomanization,
+  scrollResetDelay: state.scrollResetDelay,
   onLineClick: (timeMs) => {
-    clock.current = timeMs;
-    renderer.setCurrentTime(timeMs);
+    if (player.hasAudio()) {
+      player.seek(timeMs);
+      if (!player.getIsPlaying()) void player.play();
+    } else {
+      renderer.setCurrentTime(timeMs);
+    }
   },
 });
-renderer.setLyrics(applyScrollPreroll(DEMO_LYRICS));
-renderer.getBottomLineElement().textContent = "lyric-dom demo";
 
-// ---- 播放控制 ----
-
-const playBtn = document.getElementById("play-btn") as HTMLButtonElement;
-const timeSlider = document.getElementById("time-slider") as HTMLInputElement;
-const timeLabel = document.getElementById("time-label") as HTMLElement;
-const rateSelect = document.getElementById("rate-select") as HTMLSelectElement;
-
+// ---- 播放控制条事件 ----
 playBtn.addEventListener("click", () => {
-  clock.playing = !clock.playing;
-  playBtn.textContent = clock.playing ? "暂停" : "播放";
-  renderer.setPlaying(clock.playing);
-});
-
-timeSlider.max = String(TOTAL_DURATION);
-timeSlider.addEventListener("input", () => {
-  clock.current = Number.parseFloat(timeSlider.value);
-  renderer.setCurrentTime(clock.current);
+  player.togglePlay();
 });
 
 rateSelect.addEventListener("change", () => {
-  clock.rate = Number.parseFloat(rateSelect.value);
+  player.setPlaybackRate(Number.parseFloat(rateSelect.value));
 });
 
-const formatTime = (ms: number) =>
-  `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`;
+volumeSlider.addEventListener("input", () => {
+  player.setVolume(Number.parseFloat(volumeSlider.value));
+});
 
-let lastTimestamp = 0;
-const tick = (timestamp: number) => {
-  const delta = lastTimestamp ? timestamp - lastTimestamp : 16;
-  lastTimestamp = timestamp;
-  if (clock.playing) {
-    clock.current += delta * clock.rate;
-    if (clock.current >= TOTAL_DURATION) clock.current = 0;
+timeSlider.addEventListener("mousedown", () => {
+  isDraggingSlider = true;
+});
+
+timeSlider.addEventListener(
+  "touchstart",
+  () => {
+    isDraggingSlider = true;
+  },
+  { passive: true },
+);
+
+timeSlider.addEventListener("input", () => {
+  const val = Number.parseFloat(timeSlider.value);
+  timeLabel.textContent = `${formatTime(val)} / ${formatTime(player.getDuration())}`;
+});
+
+timeSlider.addEventListener("change", () => {
+  isDraggingSlider = false;
+  player.seek(Number.parseFloat(timeSlider.value));
+});
+
+// ---- 音频元数据监听 ----
+audio.addEventListener("loadedmetadata", () => {
+  const dur = player.getDuration();
+  timeSlider.max = String(Math.round(dur));
+  timeLabel.textContent = `0:00 / ${formatTime(dur)}`;
+});
+
+// ---- 媒体文件导入 ----
+audioFileInput.addEventListener("change", () => {
+  const file = audioFileInput.files?.[0];
+  if (!file) return;
+  player.loadAudio(file);
+  playBtn.disabled = false;
+  timeSlider.disabled = false;
+  audioInfo.textContent = `音频：${file.name}`;
+});
+
+lyricFileInput.addEventListener("change", async () => {
+  const file = lyricFileInput.files?.[0];
+  if (!file) return;
+  try {
+    const loaded = await parseLyricFile(file);
+    currentLines = loaded.lines;
+    renderer.setLyrics(applyScrollPreroll(loaded.lines));
+    emptyPlaceholder.style.display = "none";
+    lyricInfo.textContent = `歌词：${loaded.title} (${loaded.lines.length} 行)`;
+  } catch (err) {
+    alert(`歌词解析失败: ${String(err)}`);
   }
-  renderer.setCurrentTime(clock.current);
-  if (document.activeElement !== timeSlider) {
-    timeSlider.value = String(Math.round(clock.current));
+});
+
+// ---- 动画帧时钟循环 ----
+const onFrame = () => {
+  if (player.hasAudio()) {
+    const current = player.getCurrentTime();
+    const duration = player.getDuration();
+    renderer.setCurrentTime(current);
+
+    if (!isDraggingSlider) {
+      if (duration > 0) {
+        timeSlider.max = String(Math.round(duration));
+      }
+      timeSlider.value = String(Math.round(current));
+      timeLabel.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+    }
   }
-  timeLabel.textContent = `${formatTime(clock.current)} / ${formatTime(TOTAL_DURATION)}`;
-  requestAnimationFrame(tick);
-};
-requestAnimationFrame(tick);
 
-// ---- 配置面板 ----
-
-const state: Record<string, any> = {
-  alignPosition: 0.35,
-  wordFadeWidth: 0.5,
-  scrollResetDelay: 5000,
-  minInterludeGap: 4000,
-  breatheCycleTarget: 1500,
-  alphaAttackSpeed: 50,
-  alphaReleaseSpeed: 7,
-  inactiveAlpha: 0.2,
-  hidePassedLines: false,
-  enableBlur: false,
-  enableWordHighlight: true,
-  enableFloatAnimation: false,
-  enableEmphasizeEffect: false,
-  showTranslation: true,
-  showRomanization: true,
-  "spring.mass": 1,
-  "spring.damping": 10,
-  "spring.stiffness": 100,
-  "spring.soft": false,
+  requestAnimationFrame(onFrame);
 };
 
-/** 变更后需要重建歌词 DOM 的配置（影响 span 结构或副歌词行） */
-const REBUILD_KEYS = new Set([
-  "enableFloatAnimation",
-  "enableEmphasizeEffect",
-  "showTranslation",
-  "showRomanization",
-]);
+requestAnimationFrame(onFrame);
 
-const defs: ControlDef[] = [
-  { type: "group", label: "布局" },
-  { key: "alignPosition", label: "对齐位置", type: "range", min: 0, max: 1, step: 0.01 },
-  { type: "group", label: "逐字高亮" },
-  { key: "wordFadeWidth", label: "渐变宽度", type: "range", min: 0, max: 1, step: 0.01 },
-  { key: "enableWordHighlight", label: "逐字高亮", type: "toggle" },
-  { type: "group", label: "间奏圆点" },
-  { key: "minInterludeGap", label: "最小间隔", type: "range", min: 0, max: 10000, step: 500 },
-  { key: "breatheCycleTarget", label: "呼吸周期", type: "range", min: 500, max: 4000, step: 100 },
-  { type: "group", label: "透明度" },
-  { key: "alphaAttackSpeed", label: "激活速度", type: "range", min: 5, max: 200, step: 5 },
-  { key: "alphaReleaseSpeed", label: "衰减速度", type: "range", min: 1, max: 50, step: 1 },
-  { key: "inactiveAlpha", label: "非激活透明度", type: "range", min: 0.05, max: 1, step: 0.05 },
-  { key: "hidePassedLines", label: "隐藏已播行", type: "toggle" },
-  { type: "group", label: "效果" },
-  { key: "enableBlur", label: "逐行模糊", type: "toggle" },
-  { key: "enableFloatAnimation", label: "逐字上浮", type: "toggle" },
-  { key: "enableEmphasizeEffect", label: "强调（辉光）", type: "toggle" },
-  { key: "showTranslation", label: "翻译", type: "toggle" },
-  { key: "showRomanization", label: "音译", type: "toggle" },
-  { type: "group", label: "交互" },
-  { key: "scrollResetDelay", label: "滚动回弹延迟", type: "range", min: 0, max: 15000, step: 500 },
-  { type: "group", label: "弹簧参数" },
-  { key: "spring.mass", label: "质量", type: "range", min: 0.1, max: 5, step: 0.1 },
-  { key: "spring.damping", label: "阻尼", type: "range", min: 1, max: 60, step: 1 },
-  { key: "spring.stiffness", label: "刚度", type: "range", min: 10, max: 500, step: 5 },
-  { key: "spring.soft", label: "过阻尼（soft）", type: "toggle" },
-];
-
-const handlePanelChange = (key: string) => {
+// ---- 参数控制面板 ----
+const handlePanelChange = (key: keyof DemoState & string) => {
   if (key.startsWith("spring.")) {
     renderer.setConfig({
       springConfig: {
@@ -136,7 +166,14 @@ const handlePanelChange = (key: string) => {
     return;
   }
   renderer.setConfig({ [key]: state[key] });
-  if (REBUILD_KEYS.has(key)) renderer.setLyrics(applyScrollPreroll(DEMO_LYRICS));
+  if (REBUILD_KEYS.has(key) && currentLines.length > 0) {
+    renderer.setLyrics(applyScrollPreroll(currentLines));
+  }
 };
 
-buildPanel(document.getElementById("controls") as HTMLElement, state, defs, handlePanelChange);
+buildPanel(
+  document.getElementById("controls") as HTMLElement,
+  state,
+  CONTROL_DEFS,
+  handlePanelChange,
+);

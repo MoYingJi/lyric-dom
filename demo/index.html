@@ -4,23 +4,56 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>lyric-dom demo</title>
+    <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
     <div id="app">
-      <main id="lyrics-container"></main>
-      <aside id="panel">
+      <!-- 左侧：歌词容器与底部播放条 -->
+      <main id="player">
+        <div id="lyrics-container">
+          <div id="empty-placeholder" class="empty-placeholder">请在右侧导入音频与歌词文件</div>
+        </div>
         <div id="playback">
-          <button id="play-btn" type="button">播放</button>
+          <audio id="audio" preload="auto"><track kind="captions" /></audio>
+          <button id="play-btn" type="button" disabled>播放</button>
           <span id="time-label">0:00 / 0:00</span>
-          <input id="time-slider" type="range" min="0" max="1000" step="100" value="0" />
-          <select id="rate-select">
+          <input id="time-slider" type="range" min="0" max="0" step="10" value="0" disabled />
+          <select id="rate-select" title="倍速">
             <option value="0.5">0.5x</option>
             <option value="1" selected>1x</option>
+            <option value="1.5">1.5x</option>
             <option value="2">2x</option>
-            <option value="4">4x</option>
           </select>
+          <input id="volume-slider" type="range" min="0" max="1" step="0.05" value="1" title="音量" />
         </div>
-        <div id="controls"></div>
+      </main>
+
+      <!-- 右侧：简洁导入与参数面板 -->
+      <aside id="panel">
+        <section class="panel-section">
+          <h3>文件导入</h3>
+          <div class="import-actions">
+            <label for="audio-file" class="btn-import">导入音频</label>
+            <input id="audio-file" type="file" accept="audio/*" class="file-input-hidden" />
+
+            <label for="lyric-file" class="btn-import">导入歌词</label>
+            <input
+              id="lyric-file"
+              type="file"
+              accept=".lrc,.ttml,.xml,.qrc,.krc,.yrc,.lys,.srt,.ass,.txt"
+              class="file-input-hidden"
+            />
+          </div>
+          <div class="status-box">
+            <span id="audio-info">音频：未导入</span>
+            <span id="lyric-info">歌词：未导入</span>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h3>引擎参数</h3>
+          <div id="controls"></div>
+        </section>
       </aside>
     </div>
     <script type="module" src="/main.ts"></script>

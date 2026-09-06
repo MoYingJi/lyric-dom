@@ -16,6 +16,8 @@ const hasSegmenter = typeof Intl !== "undefined" && typeof Intl.Segmenter !== "u
  * @param obscene - 是否为脏话
  * @param startTime - 起始时间
  * @param endTime - 结束时间
+ * @param endsWithSpace - 结尾是否紧跟空格
+ * @param emptyBeat - 空拍数量
  */
 const makeAtom = (
   word: string,
@@ -23,7 +25,17 @@ const makeAtom = (
   obscene: boolean,
   startTime: number,
   endTime: number,
-): LyricWord => ({ word, romanWord, startTime, endTime, obscene });
+  endsWithSpace?: boolean,
+  emptyBeat?: number,
+): LyricWord => ({
+  word,
+  romanWord,
+  startTime,
+  endTime,
+  obscene,
+  ...(endsWithSpace ? { endsWithSpace: true } : {}),
+  ...(emptyBeat !== undefined ? { emptyBeat } : {}),
+});
 
 /**
  * 将歌词单词列表重新分组：CJK 字符逐字拆分，并通过 Intl.Segmenter 进行多语言分词。
@@ -42,6 +54,8 @@ export const chunkAndSplitLyricWords = (words: LyricWord[]): (LyricWord | LyricW
     const content = w.word.trim();
     const romanWord = w.romanWord ?? "";
     const obscene = w.obscene ?? false;
+    const endsWithSpace = w.endsWithSpace ?? false;
+    const emptyBeat = w.emptyBeat;
 
     // 空白或含 ruby 注音的单词直接保留
     if (content.length === 0 || (w.ruby?.length ?? 0) > 0) {
@@ -54,25 +68,41 @@ export const chunkAndSplitLyricWords = (words: LyricWord[]): (LyricWord | LyricW
     const duration = w.endTime - w.startTime;
     let offset = 0;
 
-    for (const part of parts) {
+    for (let pIdx = 0; pIdx < parts.length; pIdx++) {
+      const part = parts[pIdx];
+      const isLastPart = pIdx === parts.length - 1;
       if (!part.trim()) {
         const t = w.startTime + (offset / totalLen) * duration;
-        atoms.push(makeAtom(part, "", obscene, t, t));
+        atoms.push(makeAtom(part, "", obscene, t, t, isLastPart && endsWithSpace, emptyBeat));
         continue;
       }
 
       if (isCJK(part) && part.length > 1 && romanWord.trim().length === 0) {
         // CJK 多字词逐字拆分，均分时间
         const charDur = duration / totalLen;
-        for (const char of part) {
+        for (let cIdx = 0; cIdx < part.length; cIdx++) {
+          const char = part[cIdx];
+          const isLastChar = isLastPart && cIdx === part.length - 1;
           const t = w.startTime + (offset / totalLen) * duration;
-          atoms.push(makeAtom(char, "", obscene, t, t + charDur));
+          atoms.push(
+            makeAtom(char, "", obscene, t, t + charDur, isLastChar && endsWithSpace, emptyBeat),
+          );
           offset++;
         }
       } else {
         const t = w.startTime + (offset / totalLen) * duration;
         const partDur = (part.length / totalLen) * duration;
-        atoms.push(makeAtom(part, romanWord, obscene, t, t + partDur));
+        atoms.push(
+          makeAtom(
+            part,
+            romanWord,
+            obscene,
+            t,
+            t + partDur,
+            isLastPart && endsWithSpace,
+            emptyBeat,
+          ),
+        );
         offset += part.length;
       }
     }

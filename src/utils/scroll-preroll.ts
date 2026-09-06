@@ -1,6 +1,6 @@
 import type { LyricLine } from "../types";
 
-/** 与前一行无重叠时的提前量（毫秒），与 AMLL tryAdvanceStartTime 的调校值一致 */
+/** 与前一行无重叠时的提前量（毫秒） */
 const ADVANCE_NO_OVERLAP = 600;
 /** 与前一行有重叠时的提前量（毫秒） */
 const ADVANCE_OVERLAP = 400;

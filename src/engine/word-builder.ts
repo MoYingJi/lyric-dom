@@ -53,9 +53,9 @@ export const buildWordSpans = (
 
   const hasWhitespaceInfo = chunks.some((chunk) => {
     if (Array.isArray(chunk)) {
-      return chunk.some((word) => word.word !== word.word.trim());
+      return chunk.some((word) => word.word !== word.word.trim() || word.endsWithSpace);
     }
-    return chunk.word !== chunk.word.trim();
+    return chunk.word !== chunk.word.trim() || chunk.endsWithSpace;
   });
 
   const nonEmptyChunks: (LyricWord | LyricWord[])[] = chunks.filter((c) =>
@@ -100,7 +100,7 @@ export const buildWordSpans = (
     return { measurements, animTargets };
   }
 
-  // 正常路径
+  // 正常路径（包含显式空格或 endsWithSpace 标记）
   let previousText = "";
 
   for (const chunk of chunks) {
@@ -118,7 +118,8 @@ export const buildWordSpans = (
       if (isEmp) {
         buildEmphasizedChunk(chunk, mainDiv, measurements, animTargets, isLast);
       } else {
-        for (const word of chunk) {
+        for (let wIdx = 0; wIdx < chunk.length; wIdx++) {
+          const word = chunk[wIdx];
           const span = document.createElement("span");
           span.textContent = word.word;
           mainDiv.appendChild(span);
@@ -130,10 +131,14 @@ export const buildWordSpans = (
             charElements: [],
             isLastWord: false,
           });
+          if (word.endsWithSpace && wIdx < chunk.length - 1) {
+            mainDiv.appendChild(document.createTextNode(" "));
+          }
         }
       }
 
-      if (mergedText.trimEnd() !== mergedText) {
+      const lastWord = chunk[chunk.length - 1];
+      if (mergedText.trimEnd() !== mergedText || lastWord?.endsWithSpace) {
         mainDiv.appendChild(document.createTextNode(" "));
         previousText = "";
       } else {
@@ -169,7 +174,7 @@ export const buildWordSpans = (
         });
       }
 
-      if (text.trimEnd() !== text) {
+      if (text.trimEnd() !== text || chunk.endsWithSpace) {
         mainDiv.appendChild(document.createTextNode(" "));
         previousText = "";
       } else {
@@ -194,6 +199,7 @@ function buildEmphasizedChunk(
     word: atoms.map((a) => a.word).join(""),
     startTime: Math.min(...atoms.map((a) => a.startTime)),
     endTime: Math.max(...atoms.map((a) => a.endTime)),
+    endsWithSpace: atoms[atoms.length - 1]?.endsWithSpace,
   };
   const trimmed = mergedWord.word.trim();
 

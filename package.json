@@ -36,6 +36,7 @@
     "@biomejs/biome": "^2.5.12",
     "@tsdown/css": "^0.22.14",
     "happy-dom": "^20.13.2",
+    "lyric-kit": "^0.2.0",
     "tsdown": "^0.22.14",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",

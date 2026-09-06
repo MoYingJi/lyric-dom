@@ -19,10 +19,18 @@ export interface LyricWord extends LyricSpan {
   obscene?: boolean;
   /** 注音（如日语假名标注） */
   ruby?: LyricSpan[];
+  /**
+   * 该音节结尾是否紧跟空格
+   */
+  endsWithSpace?: boolean;
+  /** 空拍数量（用于前奏/间奏打拍动效） */
+  emptyBeat?: number;
 }
 
 /** 一行歌词 */
 export interface LyricLine {
+  /** 行唯一标识符，如 "L1", "L2" */
+  id?: string;
   /** 主歌词语言，用于字形选择与 HTML lang */
   language?: LyricLanguage;
   /**
@@ -42,4 +50,10 @@ export interface LyricLine {
   isBG: boolean;
   /** 是否为对唱歌词行 */
   isDuet: boolean;
+  /** 演唱者 ID，如 "v1", "v2" */
+  agentId?: string;
+  /** 歌曲结构分段标签（如 "Intro", "Verse", "Chorus", "Bridge", "Outro"） */
+  songPart?: string;
+  /** 所属结构块索引 */
+  blockIndex?: number;
 }
