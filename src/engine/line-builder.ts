@@ -16,6 +16,8 @@ export interface LineBuildOptions extends WordBuildOptions {
   showTranslation: boolean;
   /** 是否显示音译歌词 */
   showRomanization: boolean;
+  /** 是否显示逐字音译 */
+  showWordRomanization: boolean;
 }
 
 /** 行 DOM 构建结果 */
@@ -68,8 +70,18 @@ export const buildLineElements = (
     // 为主歌词行设置 lang 属性，便于浏览器选择正确字体与排版
     if (line.language) mainDiv.lang = line.language;
 
-    // 行歌词是否静态（≤1 个单词，无逐字动画）
-    const isStatic = line.words.length === 0 || (line.words.length === 1 && !hasMultiWordLine);
+    // 逐字音译
+    const hasWordRoman = line.words.some((w) => Boolean(w.romanWord?.trim()));
+    const showWordRomanForLine = options.showWordRomanization && hasWordRoman;
+    // 行音译（逐字优先，无逐字时回退）
+    const showLineRomanForLine =
+      options.showRomanization && Boolean(line.romanLyric) && !showWordRomanForLine;
+
+    // 行歌词是否静态（无逐字/注音时才作为静态文本）
+    const isStatic =
+      (line.words.length === 0 || (line.words.length === 1 && !hasMultiWordLine)) &&
+      !showWordRomanForLine &&
+      !(options.showRuby && line.words[0]?.ruby?.length);
 
     if (isStatic) {
       mainDiv.appendChild(document.createTextNode(line.words.map((w) => w.word).join("")));
@@ -86,6 +98,7 @@ export const buildLineElements = (
         enableEmphasizeEffect: options.enableEmphasizeEffect,
         emphasizeMinDuration: options.emphasizeMinDuration ?? 1000,
         showRuby: options.showRuby,
+        showWordRoman: showWordRomanForLine,
       });
       wordMeasurements[i] = result.measurements;
       lineAnimTargets[i] = result.animTargets;
@@ -102,7 +115,7 @@ export const buildLineElements = (
       subDiv.textContent = line.translatedLyric;
       contentDiv.appendChild(subDiv);
     }
-    if (options.showRomanization && line.romanLyric) {
+    if (showLineRomanForLine) {
       const subDiv = document.createElement("div");
       subDiv.className = "lp-sub";
       subDiv.textContent = line.romanLyric;

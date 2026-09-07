@@ -6,7 +6,6 @@ import {
   createInitialState,
   type DemoState,
   loadState,
-  REBUILD_KEYS,
   SPRING_PRESETS,
   type SpringPreset,
   saveState,
@@ -78,6 +77,7 @@ const renderer = new LyricRenderer(container, {
   emphasizeMinDuration: state.emphasizeMinDuration,
   showTranslation: state.showTranslation,
   showRomanization: state.showRomanization,
+  showWordRomanization: state.showWordRomanization,
   showRuby: state.showRuby,
   enableScrollPreroll: state.enableScrollPreroll,
   scrollResetDelay: state.scrollResetDelay,
@@ -294,9 +294,6 @@ const handlePanelChange = (key: keyof DemoState & string) => {
     return;
   }
   renderer.setConfig({ [key]: state[key] });
-  if (REBUILD_KEYS.has(key) && currentLines.length > 0) {
-    renderer.setLyrics(currentLines);
-  }
 };
 
 // ---- 重置配置 ----
@@ -320,6 +317,7 @@ btnReset?.addEventListener("click", () => {
     emphasizeMinDuration: state.emphasizeMinDuration,
     showTranslation: state.showTranslation,
     showRomanization: state.showRomanization,
+    showWordRomanization: state.showWordRomanization,
     showRuby: state.showRuby,
     enableScrollPreroll: state.enableScrollPreroll,
     scrollResetDelay: state.scrollResetDelay,
@@ -331,10 +329,6 @@ btnReset?.addEventListener("click", () => {
       soft: state["spring.soft"],
     },
   });
-
-  if (currentLines.length > 0) {
-    renderer.setLyrics(currentLines);
-  }
 
   buildPanel(controlsContainer, state, CONTROL_DEFS, handlePanelChange);
 });

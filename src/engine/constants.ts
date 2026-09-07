@@ -43,6 +43,8 @@ export const DEFAULTS = {
   showTranslation: true,
   /** 是否显示音译歌词 */
   showRomanization: true,
+  /** 是否显示逐字音译 */
+  showWordRomanization: false,
   /** 是否显示词内注音（ruby） */
   showRuby: false,
   /** 是否启用滚动预滚优化 */

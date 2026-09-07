@@ -100,8 +100,13 @@
 .lp-sub {
   font-size: var(--lp-sub-font-size, max(0.5em, 10px));
   line-height: var(--lp-sub-line-height, 1.5em);
-  opacity: calc(var(--pass, 1) * var(--lp-sub-opacity, 0.3));
   color: var(--lp-sub-color, inherit);
+  opacity: var(--lp-sub-inactive-opacity, var(--da, 0.2));
+  transition: opacity 0.35s ease;
+}
+
+.lp-line.active .lp-sub {
+  opacity: var(--lp-sub-active-opacity, var(--lp-sub-opacity, 0.35));
 }
 
 /* ---- 间奏圆点 ---- */
@@ -155,6 +160,20 @@
     }
   }
 
+  /* 逐字音译单词包裹层 */
+  & > span.lp-word-roman {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    vertical-align: bottom;
+    text-align: left;
+    margin-inline-end: var(--lp-word-roman-gap, 0.3em);
+
+    &:last-child {
+      margin-inline-end: 0;
+    }
+  }
+
   /* 强调单词包裹层 */
   & > span.lp-emp-wrapper {
     display: inline-block;
@@ -164,11 +183,47 @@
     padding: 1em;
     margin: -1em;
 
+    &.lp-word-roman {
+      display: inline-flex;
+      vertical-align: bottom;
+      margin-inline-end: calc(-1em + var(--lp-word-roman-gap, 0.3em));
+
+      &:last-child {
+        margin-inline-end: -1em;
+      }
+    }
+
     & > span {
       display: inline-block;
       padding: 1em;
       margin: -1em;
     }
+  }
+
+  .lp-word-text {
+    display: inline-block;
+    white-space: pre;
+    text-align: left;
+  }
+
+  .lp-roman-word {
+    display: block;
+    font-size: var(--lp-roman-font-size, 0.5em);
+    line-height: var(--lp-roman-line-height, 1.35);
+    padding-bottom: 0.12em;
+    font-weight: 500;
+    color: var(--lp-roman-color, inherit);
+    opacity: var(--lp-roman-opacity, 0.75);
+    white-space: nowrap;
+    user-select: none;
+    pointer-events: none;
+    text-align: left;
+  }
+
+  .lp-emp-chars {
+    display: inline-block;
+    white-space: pre;
+    text-align: left;
   }
 }
 

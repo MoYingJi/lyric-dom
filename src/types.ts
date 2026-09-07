@@ -198,6 +198,11 @@ export interface RendererConfig {
    */
   showRomanization: boolean;
   /**
+   * 是否显示逐字音译
+   * @default false
+   */
+  showWordRomanization: boolean;
+  /**
    * 是否显示词内注音（ruby）
    * @default false
    */

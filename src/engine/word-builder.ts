@@ -19,6 +19,8 @@ export interface WordBuildOptions {
   emphasizeMinDuration: number;
   /** 是否显示词内注音 */
   showRuby: boolean;
+  /** 是否显示逐字音译 */
+  showWordRoman?: boolean;
 }
 
 /**
@@ -33,7 +35,12 @@ export const buildWordSpans = (
   mainDiv: HTMLDivElement,
   options: WordBuildOptions,
 ): BuildResult => {
-  const { enableEmphasizeEffect: enableEmphasize, emphasizeMinDuration, showRuby } = options;
+  const {
+    enableEmphasizeEffect: enableEmphasize,
+    emphasizeMinDuration,
+    showRuby,
+    showWordRoman = false,
+  } = options;
   const chunks = chunkAndSplitLyricWords(words);
   const measurements: WordMeasurement[] = [];
   const animTargets: WordAnimTarget[] = [];
@@ -64,12 +71,12 @@ export const buildWordSpans = (
       }
 
       if (isEmp) {
-        buildEmphasizedChunk(atoms, mainDiv, measurements, animTargets, isLast);
+        buildEmphasizedChunk(atoms, mainDiv, measurements, animTargets, isLast, showWordRoman);
       } else {
         for (const atom of atoms) {
           const text = atom.word.trim();
           if (!text) continue;
-          appendWordSpan(atom, mainDiv, measurements, animTargets, showRuby);
+          appendWordSpan(atom, mainDiv, measurements, animTargets, showRuby, showWordRoman);
         }
       }
       const lastAtom = atoms[atoms.length - 1];
@@ -94,11 +101,11 @@ export const buildWordSpans = (
       }
 
       if (isEmp) {
-        buildEmphasizedChunk(chunk, mainDiv, measurements, animTargets, isLast);
+        buildEmphasizedChunk(chunk, mainDiv, measurements, animTargets, isLast, showWordRoman);
       } else {
         for (let wIdx = 0; wIdx < chunk.length; wIdx++) {
           const word = chunk[wIdx];
-          appendWordSpan(word, mainDiv, measurements, animTargets, showRuby);
+          appendWordSpan(word, mainDiv, measurements, animTargets, showRuby, showWordRoman);
           if (word.endsWithSpace && wIdx < chunk.length - 1) {
             mainDiv.appendChild(document.createTextNode(" "));
           }
@@ -127,9 +134,9 @@ export const buildWordSpans = (
       }
 
       if (isEmp) {
-        buildEmphasizedChunk([chunk], mainDiv, measurements, animTargets, isLast);
+        buildEmphasizedChunk([chunk], mainDiv, measurements, animTargets, isLast, showWordRoman);
       } else {
-        appendWordSpan(chunk, mainDiv, measurements, animTargets, showRuby);
+        appendWordSpan(chunk, mainDiv, measurements, animTargets, showRuby, showWordRoman);
       }
 
       if (text.trimEnd() !== text || chunk.endsWithSpace) {
@@ -144,12 +151,13 @@ export const buildWordSpans = (
 };
 
 /**
- * 创建普通单词 span（含 ruby 注音）并挂载
+ * 创建普通单词 span（含 ruby 注音与逐字音译）并挂载
  * @param word - 单词数据
  * @param mainDiv - 挂载目标容器
  * @param measurements - 测量数据输出数组
  * @param animTargets - 动画目标输出数组
  * @param showRuby - 是否渲染注音
+ * @param showWordRoman - 是否渲染逐字音译
  */
 const appendWordSpan = (
   word: LyricWord,
@@ -157,14 +165,36 @@ const appendWordSpan = (
   measurements: WordMeasurement[],
   animTargets: WordAnimTarget[],
   showRuby: boolean,
+  showWordRoman: boolean,
 ) => {
   const span = document.createElement("span");
   const ruby = showRuby ? word.ruby : undefined;
-  if (ruby?.length) {
-    buildRubyContent(span, word.word, ruby);
+
+  if (showWordRoman) {
+    span.className = "lp-word-roman";
+
+    const textEl = document.createElement("span");
+    textEl.className = "lp-word-text";
+    if (ruby?.length) {
+      buildRubyContent(textEl, word.word, ruby);
+    } else {
+      textEl.textContent = word.word;
+    }
+    span.appendChild(textEl);
+
+    const romanEl = document.createElement("span");
+    romanEl.className = "lp-roman-word";
+    const romanText = word.romanWord?.trim();
+    romanEl.textContent = romanText && romanText.length > 0 ? romanText : "\u00A0";
+    span.appendChild(romanEl);
   } else {
-    span.textContent = word.word;
+    if (ruby?.length) {
+      buildRubyContent(span, word.word, ruby);
+    } else {
+      span.textContent = word.word;
+    }
   }
+
   mainDiv.appendChild(span);
   measurements.push({ element: span, word, width: 0, fadeWidth: 0 });
   animTargets.push({
@@ -212,6 +242,7 @@ const buildRubyContent = (span: HTMLSpanElement, text: string, ruby: LyricSpan[]
  * @param measurements - 测量数据输出数组
  * @param animTargets - 动画目标输出数组
  * @param isLastWord - 是否为行末单词
+ * @param showWordRoman - 是否渲染逐字音译
  */
 const buildEmphasizedChunk = (
   atoms: LyricWord[],
@@ -219,6 +250,7 @@ const buildEmphasizedChunk = (
   measurements: WordMeasurement[],
   animTargets: WordAnimTarget[],
   isLastWord: boolean,
+  showWordRoman: boolean,
 ) => {
   const mergedWord: LyricWord = {
     word: atoms.map((a) => a.word).join(""),
@@ -232,11 +264,32 @@ const buildEmphasizedChunk = (
   wrapper.className = "lp-emp-wrapper";
 
   const charElements: HTMLElement[] = [];
-  for (const char of trimmed) {
-    const charSpan = document.createElement("span");
-    charSpan.textContent = char;
-    wrapper.appendChild(charSpan);
-    charElements.push(charSpan);
+  if (showWordRoman) {
+    wrapper.classList.add("lp-word-roman");
+
+    const charsContainer = document.createElement("span");
+    charsContainer.className = "lp-emp-chars";
+    for (const char of trimmed) {
+      const charSpan = document.createElement("span");
+      charSpan.textContent = char;
+      charsContainer.appendChild(charSpan);
+      charElements.push(charSpan);
+    }
+    wrapper.appendChild(charsContainer);
+
+    const romanEl = document.createElement("span");
+    romanEl.className = "lp-roman-word";
+    const romanParts = atoms.map((a) => a.romanWord?.trim()).filter(Boolean);
+    const romanText = romanParts.length > 0 ? romanParts.join(" ") : "";
+    romanEl.textContent = romanText.length > 0 ? romanText : "\u00A0";
+    wrapper.appendChild(romanEl);
+  } else {
+    for (const char of trimmed) {
+      const charSpan = document.createElement("span");
+      charSpan.textContent = char;
+      wrapper.appendChild(charSpan);
+      charElements.push(charSpan);
+    }
   }
 
   mainDiv.appendChild(wrapper);
@@ -319,9 +372,13 @@ export const measureAndApplyWordMasks = (
         ? `clamp(${startPos}px,calc(${startPos}px + (var(--t,${lineStart}) - ${adjustedStart}) * ${speed}px),${endPos}px) 0px,left top`
         : `${startPos}px 0px,left top`;
       const style = measurement.element.style;
+      style.setProperty("-webkit-mask-image", maskImage);
+      style.setProperty("-webkit-mask-size", maskSize);
+      style.setProperty("-webkit-mask-repeat", "repeat-y");
+      style.setProperty("-webkit-mask-position", maskPosition);
       style.setProperty("mask-image", maskImage);
       style.setProperty("mask-size", maskSize);
-      style.setProperty("mask-repeat", "no-repeat");
+      style.setProperty("mask-repeat", "repeat-y");
       style.setProperty("mask-position", maskPosition);
     }
   }

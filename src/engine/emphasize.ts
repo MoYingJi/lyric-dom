@@ -157,7 +157,7 @@ export const createEmphasizeAnimations = (
     glow.pause();
     result.push(glow);
 
-    // 2. 正弦浮动动画
+    // 正弦浮动动画
     const floatFrames: Keyframe[] = new Array(FRAME_COUNT).fill(0).map((_, j) => {
       const x = (j + 1) / FRAME_COUNT;
       let y = Math.sin(x * Math.PI);

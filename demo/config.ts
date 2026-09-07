@@ -41,6 +41,7 @@ export interface DemoState extends Record<string, unknown> {
   emphasizeMinDuration: number;
   showTranslation: boolean;
   showRomanization: boolean;
+  showWordRomanization: boolean;
   showRuby: boolean;
   enableScrollPreroll: boolean;
   scrollResetDelay: number;
@@ -67,6 +68,7 @@ export const createInitialState = (): DemoState => ({
   emphasizeMinDuration: DEFAULTS.emphasizeMinDuration,
   showTranslation: DEFAULTS.showTranslation,
   showRomanization: DEFAULTS.showRomanization,
+  showWordRomanization: DEFAULTS.showWordRomanization,
   showRuby: DEFAULTS.showRuby,
   enableScrollPreroll: DEFAULTS.enableScrollPreroll,
   scrollResetDelay: DEFAULTS.scrollResetDelay,
@@ -118,6 +120,7 @@ export const REBUILD_KEYS = new Set([
   "emphasizeMinDuration",
   "showTranslation",
   "showRomanization",
+  "showWordRomanization",
   "showRuby",
   "enableScrollPreroll",
 ]);
@@ -135,7 +138,7 @@ export const CONTROL_DEFS: ControlDef<DemoState>[] = [
   { type: "group", label: "透明度" },
   { key: "inactiveAlpha", label: "非激活透明度", type: "range", min: 0.05, max: 1, step: 0.05 },
   { key: "hidePassedLines", label: "隐藏已播行", type: "toggle" },
-  { type: "group", label: "效果" },
+  { type: "group", label: "动效与强调" },
   { key: "enableBlur", label: "逐行模糊", type: "toggle" },
   { key: "enableFloatAnimation", label: "逐字上浮", type: "toggle" },
   { key: "enableEmphasizeEffect", label: "强调辉光", type: "toggle" },
@@ -147,8 +150,10 @@ export const CONTROL_DEFS: ControlDef<DemoState>[] = [
     max: 3000,
     step: 100,
   },
+  { type: "group", label: "文本与音标" },
   { key: "showTranslation", label: "显示翻译", type: "toggle" },
-  { key: "showRomanization", label: "显示音译", type: "toggle" },
+  { key: "showRomanization", label: "行音译歌词", type: "toggle" },
+  { key: "showWordRomanization", label: "逐字音译", type: "toggle" },
   { key: "showRuby", label: "显示注音", type: "toggle" },
   { type: "group", label: "滚动与优化" },
   { key: "enableScrollPreroll", label: "滚动提前预滚", type: "toggle" },

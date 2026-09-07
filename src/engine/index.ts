@@ -183,6 +183,8 @@ export class LyricRenderer {
   private showTranslation = DEFAULTS.showTranslation;
   /** 是否显示音译歌词 */
   private showRomanization = DEFAULTS.showRomanization;
+  /** 是否显示逐字音译 */
+  private showWordRomanization = DEFAULTS.showWordRomanization;
   /** 是否显示词内注音（ruby） */
   private showRuby = DEFAULTS.showRuby;
   /** 原始歌词数据（未应用滚动预滚前，用于动态开关预滚时重新计算） */
@@ -414,6 +416,7 @@ export class LyricRenderer {
       emphasizeMinDuration: this.emphasizeMinDuration,
       showTranslation: this.showTranslation,
       showRomanization: this.showRomanization,
+      showWordRomanization: this.showWordRomanization,
       showRuby: this.showRuby,
     });
     this.lineElements = built.lineElements;
@@ -514,36 +517,57 @@ export class LyricRenderer {
     if (config.inactiveAlpha != null) this.inactiveAlpha = config.inactiveAlpha;
     if (config.hidePassedLines != null) this.hidePassedLines = config.hidePassedLines;
     if (config.enableBlur != null) this.enableBlur = config.enableBlur;
+    let domRebuildNeeded = false;
+    let needPrerollUpdate = false;
+
     if (config.enableWordHighlight != null) this.enableWordHighlight = config.enableWordHighlight;
     if (config.enableFloatAnimation != null)
       this.enableFloatAnimation = config.enableFloatAnimation;
-    if (config.enableEmphasizeEffect != null)
+    if (
+      config.enableEmphasizeEffect != null &&
+      config.enableEmphasizeEffect !== this.enableEmphasizeEffect
+    ) {
       this.enableEmphasizeEffect = config.enableEmphasizeEffect;
-    if (config.showTranslation != null) this.showTranslation = config.showTranslation;
-    if (config.showRomanization != null) this.showRomanization = config.showRomanization;
+      domRebuildNeeded = true;
+    }
+    if (config.showTranslation != null && config.showTranslation !== this.showTranslation) {
+      this.showTranslation = config.showTranslation;
+      domRebuildNeeded = true;
+    }
+    if (config.showRomanization != null && config.showRomanization !== this.showRomanization) {
+      this.showRomanization = config.showRomanization;
+      domRebuildNeeded = true;
+    }
+    if (
+      config.showWordRomanization != null &&
+      config.showWordRomanization !== this.showWordRomanization
+    ) {
+      this.showWordRomanization = config.showWordRomanization;
+      domRebuildNeeded = true;
+    }
     if (config.showRuby != null && config.showRuby !== this.showRuby) {
       this.showRuby = config.showRuby;
-      if (this.rawLines.length > 0) {
-        this.setLyrics(this.rawLines);
-        return;
-      }
+      domRebuildNeeded = true;
     }
     if (
       config.enableScrollPreroll != null &&
       config.enableScrollPreroll !== this.enableScrollPreroll
     ) {
       this.enableScrollPreroll = config.enableScrollPreroll;
-      if (this.rawLines.length > 0) {
-        this.setLyrics(this.rawLines);
-        return;
-      }
+      needPrerollUpdate = true;
     }
     if (config.scrollPrerollOptions != null) {
-      this.scrollPrerollOptions = { ...this.scrollPrerollOptions, ...config.scrollPrerollOptions };
-      if (this.enableScrollPreroll && this.rawLines.length > 0) {
-        this.setLyrics(this.rawLines);
-        return;
-      }
+      this.scrollPrerollOptions = {
+        ...this.scrollPrerollOptions,
+        ...config.scrollPrerollOptions,
+      };
+      if (this.enableScrollPreroll) needPrerollUpdate = true;
+    }
+    if (needPrerollUpdate && this.rawLines.length > 0) {
+      this.lines = this.enableScrollPreroll
+        ? applyScrollPreroll(this.rawLines, this.scrollPrerollOptions)
+        : this.rawLines.map((line) => ({ ...line }));
+      domRebuildNeeded = true;
     }
     if (config.seekBackwardThreshold != null) {
       this.seekBackwardThreshold = config.seekBackwardThreshold;
@@ -556,7 +580,12 @@ export class LyricRenderer {
       config.emphasizeMinDuration !== this.emphasizeMinDuration
     ) {
       this.emphasizeMinDuration = config.emphasizeMinDuration;
-      layoutDirty = true;
+      domRebuildNeeded = true;
+    }
+
+    if (domRebuildNeeded && this.lines.length > 0) {
+      this.rebuildDomInPlace();
+      return;
     }
 
     if (layoutDirty && this.lineElements.length > 0) {
@@ -564,6 +593,86 @@ export class LyricRenderer {
       this.calculateLayout(false);
       this.needsFullSync = true;
     }
+  };
+
+  /** 原地热重构歌词 DOM */
+  private rebuildDomInPlace = () => {
+    if (this.lines.length === 0) return;
+    // 取消旧的 Web Animations 动画实例
+    this.lineAnimations.cancelAll();
+    // 移除旧的行 DOM 元素
+    for (const element of this.lineElements) element.remove();
+    // 构建新的 DOM 结构
+    const built = buildLineElements(this.lines, {
+      enableEmphasizeEffect: this.enableEmphasizeEffect,
+      emphasizeMinDuration: this.emphasizeMinDuration,
+      showTranslation: this.showTranslation,
+      showRomanization: this.showRomanization,
+      showWordRomanization: this.showWordRomanization,
+      showRuby: this.showRuby,
+    });
+    this.lineElements = built.lineElements;
+    this.wordMeasurements = built.wordMeasurements;
+    this.lineAnimTargets = built.lineAnimTargets;
+    this.isBgAbove = built.isBgAbove;
+    this.innerElement.appendChild(built.fragment);
+    // 恢复对唱标记与当前激活行的 active 类与 Web Animations
+    this.container.classList.toggle(
+      "lp-has-duet",
+      this.lines.some((line) => line.isDuet),
+    );
+    for (const lineIdx of this.activeLineSet) {
+      this.lineElements[lineIdx]?.classList.add("active");
+    }
+    if (this.isPlaying && this.lastProcessedTime >= 0) {
+      this.lineAnimations.realignActive(this.lines, this.lastProcessedTime);
+    }
+    // 更新哨兵观察器
+    this.sentinelResizeObserver.disconnect();
+    this.sentinelElement = null;
+    if (this.lineElements.length > 0) {
+      this.sentinelElement = this.lineElements[0];
+      this.sentinelResizeObserver.observe(this.sentinelElement);
+    }
+    // 重新测量行高并计算掩码
+    this.measureLineHeights();
+    measureAndApplyWordMasks(this.wordMeasurements, this.wordFadeWidth, this.lines);
+    // 清理缓存并将当前弹簧物理坐标即时写回新 DOM，杜绝白屏与位置跳变
+    this.cachedTransforms.fill("");
+    this.cachedAlphaKeys.fill("");
+    this.cachedBlurKeys.fill("");
+    this.cachedPassKeys.fill("");
+    this.cachedTimeString = "";
+    // 立即同步 transform 与模糊样式
+    const lineCount = this.lines.length;
+    for (let i = 0; i < lineCount; i++) {
+      const lineEl = this.lineElements[i];
+      if (!lineEl) continue;
+      const y = this.positionSprings[i]?.getCurrentPosition() ?? 0;
+      const s = (this.scaleSprings[i]?.getCurrentPosition() ?? 100) / 100;
+      const tf = `translateY(${y.toFixed(2)}px) scale(${s.toFixed(4)})`;
+      this.cachedTransforms[i] = tf;
+      lineEl.style.transform = tf;
+      // 同步模糊缓存与样式
+      const blur = this.blurValues[i] || 0;
+      if (blur > 0.01) {
+        lineEl.style.filter = `blur(${(blur * 1.5).toFixed(2)}px)`;
+        this.cachedBlurKeys[i] = blur.toFixed(2);
+      }
+    }
+    // 恢复当前激活行的 --t 时间驱动变量
+    if (this.enableWordHighlight && this.lastProcessedTime >= 0) {
+      const timeStr = String(this.lastProcessedTime);
+      this.cachedTimeString = timeStr;
+      for (const lineIdx of this.activeLineSet) {
+        this.lineElements[lineIdx]?.style.setProperty("--t", timeStr);
+      }
+    }
+    // 立即同步视觉透明度（--ba, --da, --pass）
+    this.snapVisualState();
+    // 平滑重算布局
+    this.calculateLayout(false);
+    this.needsFullSync = true;
   };
 
   /** 测量所有行的 offsetHeight 并缓存到 lineHeights */
