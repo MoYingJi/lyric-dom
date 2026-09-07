@@ -1,7 +1,33 @@
 import { DEFAULTS } from "../src";
 import type { ControlDef } from "./panel";
 
+export const STORAGE_KEY = "lyric_dom_demo_state";
+
+/** 弹簧动画预设类型 */
+export type SpringPreset =
+  | "default"
+  | "smooth"
+  | "responsive"
+  | "jello"
+  | "heavy"
+  | "noBounce"
+  | "custom";
+
+/** 弹簧预设参数映射（与 SPlayer-Next 严格对齐） */
+export const SPRING_PRESETS: Record<
+  Exclude<SpringPreset, "custom">,
+  { mass: number; damping: number; stiffness: number }
+> = {
+  default: { mass: 0.9, damping: 15, stiffness: 90 },
+  smooth: { mass: 1.2, damping: 22, stiffness: 80 },
+  responsive: { mass: 0.5, damping: 18, stiffness: 150 },
+  jello: { mass: 0.6, damping: 8, stiffness: 120 },
+  heavy: { mass: 2.0, damping: 25, stiffness: 60 },
+  noBounce: { mass: 1.0, damping: 30, stiffness: 100 },
+};
+
 export interface DemoState extends Record<string, unknown> {
+  fontSize: number;
   alignPosition: number;
   wordFadeWidth: number;
   enableWordHighlight: boolean;
@@ -19,6 +45,7 @@ export interface DemoState extends Record<string, unknown> {
   enableScrollPreroll: boolean;
   scrollResetDelay: number;
   seekForwardThreshold: number;
+  springPreset: SpringPreset;
   "spring.mass": number;
   "spring.damping": number;
   "spring.stiffness": number;
@@ -26,6 +53,7 @@ export interface DemoState extends Record<string, unknown> {
 }
 
 export const createInitialState = (): DemoState => ({
+  fontSize: 30,
   alignPosition: DEFAULTS.alignPosition,
   wordFadeWidth: DEFAULTS.wordFadeWidth,
   enableWordHighlight: DEFAULTS.enableWordHighlight,
@@ -43,11 +71,46 @@ export const createInitialState = (): DemoState => ({
   enableScrollPreroll: DEFAULTS.enableScrollPreroll,
   scrollResetDelay: DEFAULTS.scrollResetDelay,
   seekForwardThreshold: DEFAULTS.seekForwardThreshold,
-  "spring.mass": 1,
-  "spring.damping": 10,
-  "spring.stiffness": 100,
+  springPreset: "default",
+  "spring.mass": SPRING_PRESETS.default.mass,
+  "spring.damping": SPRING_PRESETS.default.damping,
+  "spring.stiffness": SPRING_PRESETS.default.stiffness,
   "spring.soft": false,
 });
+
+/** 从 localStorage 读取持久化状态，若无或异常则返回初始默认值 */
+export const loadState = (): DemoState => {
+  const initial = createInitialState();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return initial;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === "object" && parsed !== null) {
+      return { ...initial, ...parsed };
+    }
+  } catch (err) {
+    console.warn("读取持久化配置失败，使用默认配置:", err);
+  }
+  return initial;
+};
+
+/** 持久化保存当前状态到 localStorage */
+export const saveState = (state: DemoState): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (err) {
+    console.warn("保存持久化配置失败:", err);
+  }
+};
+
+/** 清除已保存的持久化配置 */
+export const clearSavedState = (): void => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (err) {
+    console.warn("清除持久化配置失败:", err);
+  }
+};
 
 export const REBUILD_KEYS = new Set([
   "enableFloatAnimation",
@@ -60,7 +123,8 @@ export const REBUILD_KEYS = new Set([
 ]);
 
 export const CONTROL_DEFS: ControlDef<DemoState>[] = [
-  { type: "group", label: "布局" },
+  { type: "group", label: "布局与字号" },
+  { key: "fontSize", label: "字体大小(px)", type: "range", min: 16, max: 64, step: 1 },
   { key: "alignPosition", label: "对齐位置", type: "range", min: 0, max: 1, step: 0.01 },
   { type: "group", label: "逐字高亮" },
   { key: "wordFadeWidth", label: "渐变宽度", type: "range", min: 0, max: 1, step: 0.01 },
@@ -98,8 +162,22 @@ export const CONTROL_DEFS: ControlDef<DemoState>[] = [
     step: 100,
   },
   { type: "group", label: "弹簧参数" },
+  {
+    key: "springPreset",
+    label: "弹簧预设",
+    type: "select",
+    options: [
+      { value: "default", label: "默认" },
+      { value: "smooth", label: "更平滑" },
+      { value: "responsive", label: "快速跟手" },
+      { value: "jello", label: "果冻感" },
+      { value: "heavy", label: "厚重缓慢" },
+      { value: "noBounce", label: "无弹跳" },
+      { value: "custom", label: "自定义" },
+    ],
+  },
   { key: "spring.mass", label: "质量", type: "range", min: 0.1, max: 5, step: 0.1 },
-  { key: "spring.damping", label: "阻尼", type: "range", min: 1, max: 60, step: 1 },
+  { key: "spring.damping", label: "阻尼", type: "range", min: 1, max: 60, step: 0.5 },
   { key: "spring.stiffness", label: "刚度", type: "range", min: 10, max: 500, step: 5 },
   { key: "spring.soft", label: "过阻尼(soft)", type: "toggle" },
 ];

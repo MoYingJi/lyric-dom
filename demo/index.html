@@ -10,6 +10,31 @@
     <div id="app">
       <!-- 左侧：歌词容器与底部播放条 -->
       <main id="player">
+        <!-- 歌词区域顶栏：性能占用监控栏 -->
+        <header id="perf-bar" class="perf-bar">
+          <div class="perf-item" id="perf-fps-box" title="渲染帧率与每帧时间">
+            <span class="perf-dot" id="perf-fps-dot"></span>
+            <span class="perf-label">FPS</span>
+            <span class="perf-val" id="perf-fps-val">--</span>
+            <span class="perf-sub" id="perf-frametime-val">-- ms</span>
+          </div>
+          <div class="perf-divider"></div>
+          <div class="perf-item" title="JS 堆内存占用（已用 / 总堆内存）">
+            <span class="perf-label">JS 内存</span>
+            <span class="perf-val" id="perf-mem-val">--</span>
+          </div>
+          <div class="perf-divider"></div>
+          <div class="perf-item" title="当前已加载歌词总行数">
+            <span class="perf-label">歌词行数</span>
+            <span class="perf-val" id="perf-dom-val">0 行</span>
+          </div>
+          <div class="perf-divider"></div>
+          <div class="perf-item" title="当前播放器运行状态">
+            <span class="perf-label">播放状态</span>
+            <span class="perf-val" id="perf-status-val">已暂停</span>
+          </div>
+        </header>
+
         <div id="lyrics-container">
           <div id="empty-placeholder" class="empty-placeholder">请在右侧导入音频与歌词文件</div>
         </div>
@@ -51,7 +76,10 @@
         </section>
 
         <section class="panel-section">
-          <h3>引擎参数</h3>
+          <div class="panel-header-row">
+            <h3>引擎参数</h3>
+            <button id="btn-reset" class="btn-reset" type="button" title="恢复官方初始默认配置">重置参数</button>
+          </div>
           <div id="controls"></div>
         </section>
       </aside>

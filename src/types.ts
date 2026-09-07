@@ -73,17 +73,17 @@ export interface LyricLine {
 export interface SpringParams {
   /**
    * 质量
-   * @default 1
+   * @default 0.9
    */
   mass: number;
   /**
    * 阻尼系数
-   * @default 10
+   * @default 15
    */
   damping: number;
   /**
    * 刚度
-   * @default 100
+   * @default 90
    */
   stiffness: number;
   /**

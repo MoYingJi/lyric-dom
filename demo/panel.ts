@@ -1,12 +1,19 @@
+/** 下拉选项定义 */
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
 /** 面板控件定义 */
 export interface ControlDef<T extends Record<string, unknown>> {
   /** 状态对象中的键；group 类型时省略 */
   key?: keyof T & string;
   label: string;
-  type: "group" | "toggle" | "range";
+  type: "group" | "toggle" | "range" | "select";
   min?: number;
   max?: number;
   step?: number;
+  options?: SelectOption[];
 }
 
 /**
@@ -53,6 +60,24 @@ export const buildPanel = <T extends Record<string, unknown>>(
         onChange(key);
       });
       row.appendChild(input);
+    } else if (def.type === "select") {
+      const select = document.createElement("select");
+      select.className = "ctl-select";
+      for (const opt of def.options ?? []) {
+        const optionEl = document.createElement("option");
+        optionEl.value = opt.value;
+        optionEl.textContent = opt.label;
+        if (String(state[key]) === opt.value) {
+          optionEl.selected = true;
+        }
+        select.appendChild(optionEl);
+      }
+      select.value = String(state[key]);
+      select.addEventListener("change", () => {
+        (state as Record<string, unknown>)[key] = select.value;
+        onChange(key);
+      });
+      row.appendChild(select);
     } else {
       const input = document.createElement("input");
       input.type = "range";
