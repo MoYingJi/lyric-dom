@@ -63,6 +63,8 @@ export class LyricRenderer {
   private lineHeights: Float64Array = new Float64Array(0);
   /** 副行浮层展开进度（0 收拢 → 1 撑开），仅驱动浮层显隐与折叠；行组占位由激活态一次让出 */
   private bgExpandValues: Float64Array = new Float64Array(0);
+  /** --lp-bg-progress 写入缓存 */
+  private cachedBgKeys: string[] = [];
   /** 背景副行是否置于主行上方 */
   private isBgAbove: boolean[] = [];
   /** 容器尺寸 */
@@ -382,6 +384,7 @@ export class LyricRenderer {
     // 初始化缓存数组
     this.lineHeights = new Float64Array(lineCount);
     this.bgExpandValues = new Float64Array(lineCount);
+    this.cachedBgKeys = new Array(lineCount).fill("");
     this.cachedTransforms = new Array(lineCount).fill("");
     this.lineWillChange = new Array(lineCount).fill(false);
     this.lineCulled = new Array(lineCount).fill(false);
@@ -637,6 +640,7 @@ export class LyricRenderer {
     this.cachedAlphaKeys.fill("");
     this.cachedBlurKeys.fill("");
     this.cachedPassKeys.fill("");
+    this.cachedBgKeys.fill("");
     this.cachedTimeString = "";
     // 立即同步 transform 与模糊样式
     const lineCount = this.lines.length;
@@ -852,12 +856,14 @@ export class LyricRenderer {
     this.syncBgProgress();
   };
 
-  /** 把副行展开进度写入其宿主主行，驱动 CSS 浮层显隐与位移 */
+  /** 把副行展开进度写入浮层元素，驱动 CSS 显隐与位移；写在浮层而非宿主，缩小逐帧样式失效范围 */
   private syncBgProgress = () => {
     for (let i = 1; i < this.lines.length; i++) {
       if (!this.lines[i]?.isBG) continue;
-      const host = this.lineElements[i]?.parentElement as HTMLElement | null;
-      host?.style.setProperty("--lp-bg-progress", (this.bgExpandValues[i] || 0).toFixed(3));
+      const key = (this.bgExpandValues[i] || 0).toFixed(3);
+      if (this.cachedBgKeys[i] === key) continue;
+      this.cachedBgKeys[i] = key;
+      this.lineElements[i]?.style.setProperty("--lp-bg-progress", key);
     }
   };
 
