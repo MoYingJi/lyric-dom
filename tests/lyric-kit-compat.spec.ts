@@ -95,7 +95,9 @@ describe("lyric-kit 格式兼容性", () => {
     renderer.setLyrics(lines);
 
     const activeLines = container.querySelectorAll(".lp-line.active");
-    expect(activeLines.length).toBe(3);
+    expect(activeLines.length).toBe(2); // 两位主唱歌手的主行
+    const activeBg = container.querySelectorAll(".lp-line-bg.active");
+    expect(activeBg.length).toBe(1); // 背景和声浮层（已收进主行，非独立 .lp-line）
 
     renderer.dispose();
     container.remove();
@@ -195,25 +197,30 @@ describe("lyric-kit 格式兼容性", () => {
     renderer.setCurrentTime(2000);
     renderer.setLyrics(lines);
 
-    // 在 2000ms 时，两者均在演唱中，两者都激活
-    const activeAt2000 = container.querySelectorAll(".lp-line.active");
-    expect(activeAt2000.length).toBe(2);
+    const mainEls = container.querySelectorAll(".lp-line:not(.lp-credit)");
+    const bgEl = container.querySelector(".lp-line-bg");
+    expect(bgEl).not.toBeNull();
 
-    // 在 4000ms 时，主行（3000ms）已结束，但背景行（5000ms）仍在演唱中，主行与背景行均保持 active 亮起
+    // 在 2000ms 时，主行与背景行均在演唱中，主行与背景行浮层均激活
+    const activeAt2000 = container.querySelectorAll(".lp-line.active");
+    expect(activeAt2000.length).toBe(1); // 主行（背景行已收进其内部，不再是独立 .lp-line）
+    expect(bgEl?.classList.contains("active")).toBe(true);
+
+    // 在 4000ms 时，主行（3000ms）已结束，但背景行（5000ms）仍在演唱中，主行与背景行浮层均保持 active 亮起
     engine.processTime(4000);
-    const lineElements = container.querySelectorAll(".lp-line:not(.lp-credit)");
-    expect(lineElements[0].classList.contains("active")).toBe(true);
-    expect(lineElements[1].classList.contains("active")).toBe(true);
+    expect(mainEls[0].classList.contains("active")).toBe(true);
+    expect(bgEl?.classList.contains("active")).toBe(true);
 
     // 在 5500ms 时，两者均已结束，均退出 active
     engine.processTime(5500);
     const activeAt5500 = container.querySelectorAll(".lp-line:not(.lp-credit).active");
     expect(activeAt5500.length).toBe(0);
+    expect(bgEl?.classList.contains("active")).toBe(false);
 
     // Seek 直接跳转到 4000ms（主行已过但背景行正在演唱，两者均保持 active）
     engine.processTime(4000);
-    expect(lineElements[0].classList.contains("active")).toBe(true);
-    expect(lineElements[1].classList.contains("active")).toBe(true);
+    expect(mainEls[0].classList.contains("active")).toBe(true);
+    expect(bgEl?.classList.contains("active")).toBe(true);
 
     renderer.dispose();
     container.remove();
@@ -251,22 +258,25 @@ describe("lyric-kit 格式兼容性", () => {
     renderer.setCurrentTime(0);
     renderer.setLyrics(lines);
 
-    const lineElements = container.querySelectorAll(".lp-line:not(.lp-credit)");
+    const mainEl = container.querySelector(".lp-line:not(.lp-credit)");
+    const bgEl = container.querySelector(".lp-line-bg");
+    expect(mainEl).not.toBeNull();
+    expect(bgEl).not.toBeNull();
 
     // 在 2500ms 时，主行（4000ms）未到歌词时间，但顶部背景行（2000ms）已开唱，顶部背景行与主行对唱组激活出现
     engine.processTime(2500);
-    expect(lineElements[1].classList.contains("active")).toBe(true);
-    expect(lineElements[0].classList.contains("active")).toBe(true);
+    expect(bgEl?.classList.contains("active")).toBe(true);
+    expect(mainEl?.classList.contains("active")).toBe(true);
 
     // 在 5000ms 时，主行与背景行均在演唱中，两者都激活
     engine.processTime(5000);
-    expect(lineElements[0].classList.contains("active")).toBe(true);
-    expect(lineElements[1].classList.contains("active")).toBe(true);
+    expect(mainEl?.classList.contains("active")).toBe(true);
+    expect(bgEl?.classList.contains("active")).toBe(true);
 
     // 在 9000ms 时，两者均已唱完退出 active
     engine.processTime(9000);
-    expect(lineElements[0].classList.contains("active")).toBe(false);
-    expect(lineElements[1].classList.contains("active")).toBe(false);
+    expect(mainEl?.classList.contains("active")).toBe(false);
+    expect(bgEl?.classList.contains("active")).toBe(false);
 
     renderer.dispose();
     container.remove();

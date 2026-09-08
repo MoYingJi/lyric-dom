@@ -1,5 +1,7 @@
 /**
  * 歌词渲染引擎 — 歌词行 DOM 构建
+ * 主行是唯一排版单元；背景行收进其主行的 `.lp-line` 内做绝对定位浮层，
+ * 二者在几何上“一体”：背景行不再作为独立歌词行参与列排布。
  */
 
 import type { LyricLine } from "../types";
@@ -22,17 +24,65 @@ export interface LineBuildOptions extends WordBuildOptions {
 
 /** 行 DOM 构建结果 */
 export interface LineBuildResult {
+  /** 每行元素：主行是其 `.lp-line`，背景行是主行内部的 `.lp-line-bg` 浮层 */
   lineElements: HTMLDivElement[];
   wordMeasurements: WordMeasurement[][];
   lineAnimTargets: WordAnimTarget[][];
-  /** 标记背景人声行是否应置于主行上方 */
+  /** 背景行是否应置于主行上方 */
   isBgAbove: boolean[];
   fragment: DocumentFragment;
 }
 
+/** 构建单个 `.lp-main` 单词层并回填测量/动画目标 */
+const buildMainLayer = (
+  line: LyricLine,
+  mainDiv: HTMLDivElement,
+  options: LineBuildOptions,
+  isStatic: boolean,
+  showWordRoman: boolean,
+): { measurements: WordMeasurement[]; animTargets: WordAnimTarget[] } => {
+  if (isStatic) {
+    mainDiv.appendChild(document.createTextNode(line.words.map((w) => w.word).join("")));
+    // 静态行也加统一 mask，让 --ba 对其生效，与逐字行透明度一致
+    mainDiv.style.setProperty(
+      "mask-image",
+      "linear-gradient(rgba(0,0,0,var(--ba)),rgba(0,0,0,var(--ba)))",
+    );
+    return { measurements: [], animTargets: [] };
+  }
+  const result = buildWordSpans(line.words, mainDiv, {
+    enableEmphasizeEffect: options.enableEmphasizeEffect,
+    emphasizeMinDuration: options.emphasizeMinDuration ?? 1000,
+    showRuby: options.showRuby,
+    showWordRoman,
+  });
+  return { measurements: result.measurements, animTargets: result.animTargets };
+};
+
+/** 追加 `.lp-sub` 副文本（翻译 / 音译） */
+const appendSubs = (
+  container: HTMLElement,
+  line: LyricLine,
+  options: LineBuildOptions,
+  showLineRoman: boolean,
+) => {
+  if (options.showTranslation && line.translatedLyric) {
+    const subDiv = document.createElement("div");
+    subDiv.className = "lp-sub";
+    subDiv.textContent = line.translatedLyric;
+    container.appendChild(subDiv);
+  }
+  if (showLineRoman) {
+    const subDiv = document.createElement("div");
+    subDiv.className = "lp-sub";
+    subDiv.textContent = line.romanLyric;
+    container.appendChild(subDiv);
+  }
+};
+
 /**
  * 构建全部歌词行的 DOM 元素与关联元数据
- * @param lines - 歌词行数组
+ * @param lines - 歌词行数组（背景行紧随其主行）
  * @param options - 构建选项
  * @returns 行元素、测量数据、动画目标与置顶背景行标记
  */
@@ -53,78 +103,76 @@ export const buildLineElements = (
   for (let i = 1; i < lineCount; i++) {
     const bg = lines[i];
     const main = lines[i - 1];
-    if (!bg.isBG || main.isBG) continue;
+    if (!bg?.isBG || main?.isBG) continue;
     const bgStart = bg.words[0]?.startTime ?? bg.startTime;
     const mainStart = main.words[0]?.startTime ?? main.startTime;
     isBgAbove[i] = bgStart < mainStart;
   }
 
   const fragment = document.createDocumentFragment();
+  // 最近一个主行元素，用于收纳后续背景行
+  let hostingMain: HTMLDivElement | null = null;
+
   for (let i = 0; i < lineCount; i++) {
     const line = lines[i];
-    const lineEl = document.createElement("div");
-    lineEl.className = `lp-line${line.isDuet ? " duet" : ""}${line.isBG ? " bg" : ""}`;
-    const mainDiv = document.createElement("div");
-    mainDiv.className = "lp-main";
+    if (!line) continue;
 
-    // 为主歌词行设置 lang 属性，便于浏览器选择正确字体与排版
-    if (line.language) mainDiv.lang = line.language;
-
-    // 逐字音译
+    // 逐字音译 / 行音译 判定（背景行共用同一套规则）
     const hasWordRoman = line.words.some((w) => Boolean(w.romanWord?.trim()));
     const showWordRomanForLine = options.showWordRomanization && hasWordRoman;
-    // 行音译（逐字优先，无逐字时回退）
     const showLineRomanForLine =
       options.showRomanization && Boolean(line.romanLyric) && !showWordRomanForLine;
-
-    // 行歌词是否静态（无逐字/注音时才作为静态文本）
     const isStatic =
       (line.words.length === 0 || (line.words.length === 1 && !hasMultiWordLine)) &&
       !showWordRomanForLine &&
       !(options.showRuby && line.words[0]?.ruby?.length);
 
-    if (isStatic) {
-      mainDiv.appendChild(document.createTextNode(line.words.map((w) => w.word).join("")));
-      // 给静态行也加统一 mask，让 --ba 对其生效，与逐字行透明度一致
-      mainDiv.style.setProperty(
-        "mask-image",
-        "linear-gradient(rgba(0,0,0,var(--ba)),rgba(0,0,0,var(--ba)))",
-      );
-      wordMeasurements[i] = [];
-      lineAnimTargets[i] = [];
-    } else {
-      // 构建单词 span + 动画目标描述
-      const result = buildWordSpans(line.words, mainDiv, {
-        enableEmphasizeEffect: options.enableEmphasizeEffect,
-        emphasizeMinDuration: options.emphasizeMinDuration ?? 1000,
-        showRuby: options.showRuby,
-        showWordRoman: showWordRomanForLine,
-      });
-      wordMeasurements[i] = result.measurements;
-      lineAnimTargets[i] = result.animTargets;
+    // ── 主行：独立排版单元 ──
+    if (!line.isBG) {
+      const lineEl = document.createElement("div");
+      lineEl.className = `lp-line${line.isDuet ? " duet" : ""}`;
+
+      const mainDiv = document.createElement("div");
+      mainDiv.className = "lp-main";
+      // 设置 lang 便于浏览器选择正确字体与排版
+      if (line.language) mainDiv.lang = line.language;
+
+      const built = buildMainLayer(line, mainDiv, options, isStatic, showWordRomanForLine);
+      wordMeasurements[i] = built.measurements;
+      lineAnimTargets[i] = built.animTargets;
+
+      // 内容包裹层
+      const contentDiv = document.createElement("div");
+      contentDiv.className = "lp-content";
+      contentDiv.appendChild(mainDiv);
+      appendSubs(contentDiv, line, options, showLineRomanForLine);
+
+      lineEl.appendChild(contentDiv);
+      lineElements[i] = lineEl;
+      fragment.appendChild(lineEl);
+      hostingMain = lineEl;
+      continue;
     }
 
-    // 内容包裹层
-    const contentDiv = document.createElement("div");
-    contentDiv.className = "lp-content";
-    contentDiv.appendChild(mainDiv);
+    // ── 背景行：收进主行浮层（仅激活时可见）──
+    if (!hostingMain) continue; // 异常兜底：无主行可依附则丢弃
 
-    if (options.showTranslation && line.translatedLyric) {
-      const subDiv = document.createElement("div");
-      subDiv.className = "lp-sub";
-      subDiv.textContent = line.translatedLyric;
-      contentDiv.appendChild(subDiv);
-    }
-    if (showLineRomanForLine) {
-      const subDiv = document.createElement("div");
-      subDiv.className = "lp-sub";
-      subDiv.textContent = line.romanLyric;
-      contentDiv.appendChild(subDiv);
-    }
+    const bgEl = document.createElement("div");
+    bgEl.className = `lp-line-bg${isBgAbove[i] ? " above" : ""}${line.isDuet ? " duet" : ""}`;
 
-    lineEl.appendChild(contentDiv);
-    lineElements[i] = lineEl;
-    fragment.appendChild(lineEl);
+    const bgMainDiv = document.createElement("div");
+    bgMainDiv.className = "lp-main";
+    if (line.language) bgMainDiv.lang = line.language;
+
+    const built = buildMainLayer(line, bgMainDiv, options, isStatic, showWordRomanForLine);
+    wordMeasurements[i] = built.measurements;
+    lineAnimTargets[i] = built.animTargets;
+    bgEl.appendChild(bgMainDiv);
+    appendSubs(bgEl, line, options, showLineRomanForLine);
+
+    hostingMain.classList.add("has-bg");
+    hostingMain.appendChild(bgEl);
+    lineElements[i] = bgEl;
   }
 
   return { lineElements, wordMeasurements, lineAnimTargets, isBgAbove, fragment };

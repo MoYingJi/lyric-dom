@@ -43,8 +43,6 @@ export class LyricRenderer {
   private lineAnimations = new LineAnimationController((lineIndex) =>
     this.activeLineSet.has(lineIndex),
   );
-  /** 背景人声行是否置于主行上方 */
-  private isBgAbove: boolean[] = [];
 
   /** 当前主激活行索引，多行激活时取最小 */
   private activeLineIndex = -1;
@@ -63,6 +61,10 @@ export class LyricRenderer {
 
   /** 每行高度缓存 */
   private lineHeights: Float64Array = new Float64Array(0);
+  /** 副行浮层展开进度（0 收拢 → 1 撑开），仅驱动浮层显隐与折叠；行组占位由激活态一次让出 */
+  private bgExpandValues: Float64Array = new Float64Array(0);
+  /** 背景副行是否置于主行上方 */
+  private isBgAbove: boolean[] = [];
   /** 容器尺寸 */
   private containerWidth = 0;
   private containerHeight = 0;
@@ -377,6 +379,7 @@ export class LyricRenderer {
 
     // 初始化缓存数组
     this.lineHeights = new Float64Array(lineCount);
+    this.bgExpandValues = new Float64Array(lineCount);
     this.cachedTransforms = new Array(lineCount).fill("");
     this.lineWillChange = new Array(lineCount).fill(false);
     this.lineCulled = new Array(lineCount).fill(false);
@@ -428,6 +431,12 @@ export class LyricRenderer {
 
     // 初始布局 + 入场动画
     this.handleSeek(seekTime);
+    // 初始定位时副行展开进度直接对齐目标，入场期间不延迟浮现
+    for (let i = 1; i < this.lines.length; i++) {
+      if (!this.lines[i]?.isBG) continue;
+      this.bgExpandValues[i] = this.activeLineSet.has(i) ? 1 : 0;
+    }
+    this.syncBgProgress();
     this.calculateLayout(true);
     this.playEntranceAnimation(this.containerHeight * 0.6);
     this.needsFullSync = true;
@@ -626,6 +635,8 @@ export class LyricRenderer {
     for (let i = 0; i < lineCount; i++) {
       const lineEl = this.lineElements[i];
       if (!lineEl) continue;
+      // 背景行浮层随主行移动，不写入独立位移
+      if (this.lines[i].isBG) continue;
       const y = this.positionSprings[i]?.getCurrentPosition() ?? 0;
       const s = (this.scaleSprings[i]?.getCurrentPosition() ?? 100) / 100;
       const tf = `translateY(${y.toFixed(2)}px) scale(${s.toFixed(4)})`;
@@ -688,6 +699,7 @@ export class LyricRenderer {
     const deactivated = this.deactivatedBuffer;
     activated.length = 0;
     deactivated.clear();
+    let bgTransition = false;
 
     // 检测新激活的行（背景行跟随主行生命周期，不独立触发激活）
     for (let i = 0; i < lines.length; i++) {
@@ -696,7 +708,10 @@ export class LyricRenderer {
 
       if (line.startTime <= currentTime && line.endTime > currentTime) {
         activated.push(i);
-        if (lines[i + 1]?.isBG) activated.push(i + 1);
+        if (lines[i + 1]?.isBG) {
+          activated.push(i + 1);
+          bgTransition = true;
+        }
       }
     }
 
@@ -712,7 +727,10 @@ export class LyricRenderer {
 
       if (line.startTime > currentTime || line.endTime <= currentTime) {
         deactivated.add(lineIdx);
-        if (lines[lineIdx + 1]?.isBG) deactivated.add(lineIdx + 1);
+        if (lines[lineIdx + 1]?.isBG) {
+          deactivated.add(lineIdx + 1);
+          bgTransition = true;
+        }
       }
     }
 
@@ -731,7 +749,8 @@ export class LyricRenderer {
     }
 
     if (this.activeLineSet.size > 0) this.activeLineIndex = setMin(this.activeLineSet);
-    this.calculateLayout(false);
+    // 副行开合时跳过级联延迟，行组让位弹簧与浮层淡入同时起步
+    this.calculateLayout(false, bgTransition);
     return true;
   };
 
@@ -778,6 +797,7 @@ export class LyricRenderer {
       this.activeLineIndex = futureIdx === -1 ? lines.length : futureIdx;
     }
 
+    // seek 走渐进淡入：副行展开进度保持当前值，由帧循环插值到目标
     this.calculateLayout(snap, true);
     if (snap) this.snapVisualState();
   };
@@ -816,12 +836,27 @@ export class LyricRenderer {
         lineEl.style.setProperty("--pass", passKey);
       }
     }
+    // 副行展开量瞬移（隐藏/冻结恢复、热重构时避免让位过渡）
+    for (let i = 1; i < this.lines.length; i++) {
+      if (!this.lines[i]?.isBG) continue;
+      this.bgExpandValues[i] = this.activeLineSet.has(i) ? 1 : 0;
+    }
+    this.syncBgProgress();
+  };
+
+  /** 把副行展开进度写入其宿主主行，驱动 CSS 浮层显隐与位移 */
+  private syncBgProgress = () => {
+    for (let i = 1; i < this.lines.length; i++) {
+      if (!this.lines[i]?.isBG) continue;
+      const host = this.lineElements[i]?.parentElement as HTMLElement | null;
+      host?.style.setProperty("--lp-bg-progress", (this.bgExpandValues[i] || 0).toFixed(3));
+    }
   };
 
   /**
    * 计算所有行的目标位置和缩放
    * @param syncImmediate - true 瞬移到目标位置，false 弹簧动画过渡
-   * @param noCascade - true 跳过级联延迟，所有行同步运动（用于 seek）
+   * @param noCascade - true 跳过级联延迟，所有行同步运动（用于 seek 与副行开合）
    */
   private calculateLayout = (syncImmediate: boolean, noCascade = false) => {
     const viewHeight = this.containerHeight;
@@ -844,33 +879,30 @@ export class LyricRenderer {
     }
 
     // 计算激活行之前的累计高度，确定起始位置
-    // 跳过条件须与下方 collapsedBG 一致：非激活背景行不占空间
+    // 主行是排版单元；副行激活时立即占满整槽（相邻行弹簧一次让位），未激活不计入
     let position = -this.userScrollOffset;
     let heightAccum = 0;
     for (let i = 0; i < targetIdx; i++) {
-      if (lines[i]?.isBG && !this.activeLineSet.has(i)) continue;
+      const line = lines[i];
+      if (!line || line.isBG) continue;
       heightAccum += this.lineHeights[i] || 40;
+      if (lines[i + 1]?.isBG && this.activeLineSet.has(i + 1)) {
+        heightAccum += this.lineHeights[i + 1] || 40;
+      }
     }
     position -= heightAccum;
     position += viewHeight * this.alignPosition - (this.lineHeights[targetIdx] || 40) / 2;
-    // 激活主行带置顶背景行时，主行会被背景行下推，整体上移以保持主行居中
-    if (this.isBgAbove[targetIdx + 1] && this.activeLineSet.has(targetIdx + 1)) {
-      position -= this.lineHeights[targetIdx + 1] || 40;
-    }
 
     // 级联延迟：越远离激活行的行延迟越小，产生波浪效果
     let cascadeDelay = 0;
     let baseDelay = syncImmediate || noCascade ? 0 : 50;
     let dotsInserted = false;
-    // 置顶背景行延后到下一轮迭代摆放，记录其槽位
-    let pendingBgIdx = -1;
-    let pendingBgY = 0;
 
     for (let i = 0; i < lineCount; i++) {
-      const posSpring = this.positionSprings[i];
-      const scaleSpring = this.scaleSprings[i];
       const line = lines[i];
       if (!line) continue;
+      // 副行随其主行组参与布局，自身不单独推进
+      if (line.isBG) continue;
 
       // 间奏圆点占位
       if (!dotsInserted && interlude && i === interlude[2] + 1) {
@@ -887,30 +919,23 @@ export class LyricRenderer {
       }
 
       const isActive = this.activeLineSet.has(i);
-      const targetScale = !isActive && this.isPlaying ? (line.isBG ? 75 : 97) : 100;
-      // 非激活背景行始终折叠：其文字本就不可见（CSS 仅 .active 显示），
-      // 若与播放状态挂钩，暂停时会被看不见的行撑出空隙
-      const collapsedBG = line.isBG && !isActive;
+      const targetScale = !isActive && this.isPlaying ? 97 : 100;
+      const bg = lines[i + 1];
+      const bgOpen = bg?.isBG ? this.activeLineSet.has(i + 1) : false;
+      const bgH = bgOpen ? this.lineHeights[i + 1] || 40 : 0;
+      // 上置副行占主行上方槽位，主行被下推；否则主行上方即行组顶部
+      const lineY = position + (bgOpen && this.isBgAbove[i + 1] ? bgH : 0);
 
-      // 默认顺排；置顶背景行排到主行上方
-      let lineY = position;
-      let advance = collapsedBG ? 0 : this.lineHeights[i] || 40;
-      if (i === pendingBgIdx) {
-        // 置顶背景行：用主行处预留的上方槽位，自身不再推进布局
-        lineY = pendingBgY;
-        advance = 0;
-        pendingBgIdx = -1;
-      } else if (this.isBgAbove[i + 1]) {
-        // 主行带置顶背景行：背景行在上、主行在下
-        const bgIdx = i + 1;
-        const bgH = this.lineHeights[bgIdx] || 40;
-        const bgSpace = this.activeLineSet.has(bgIdx) ? bgH : 0;
-        lineY = position + bgSpace;
-        pendingBgY = lineY - bgH;
-        pendingBgIdx = bgIdx;
-        advance = bgSpace + (this.lineHeights[i] || 40);
+      // 副行位置弹簧：仅用于掩码/透明度视口判定，位移由嵌套浮层随主行承载
+      if (bg?.isBG) {
+        const bgSpring = this.positionSprings[i + 1];
+        const bgY = this.isBgAbove[i + 1] ? lineY - bgH : lineY + (this.lineHeights[i] || 40);
+        if (syncImmediate) bgSpring.setPosition(bgY);
+        else bgSpring.setTargetPosition(bgY, cascadeDelay);
       }
 
+      const posSpring = this.positionSprings[i];
+      const scaleSpring = this.scaleSprings[i];
       if (syncImmediate) {
         posSpring.setPosition(lineY);
         scaleSpring.setPosition(targetScale);
@@ -919,10 +944,10 @@ export class LyricRenderer {
         scaleSpring.setTargetPosition(targetScale, cascadeDelay);
       }
 
-      position += advance;
+      position += (this.lineHeights[i] || 40) + bgH;
 
       if (position >= 0 && !this.isUserScrolling) {
-        if (!line.isBG) cascadeDelay += baseDelay;
+        cascadeDelay += baseDelay;
         if (i >= targetIdx) baseDelay /= 1.05;
       }
     }
@@ -939,6 +964,8 @@ export class LyricRenderer {
    */
   private playEntranceAnimation = (offset: number) => {
     for (let i = 0; i < this.positionSprings.length; i++) {
+      // 背景行浮层已随主行 DOM 一起入场，不再单独驱动
+      if (this.lines[i].isBG) continue;
       const posSpring = this.positionSprings[i];
       const scaleSpring = this.scaleSprings[i];
       const targetY = posSpring.getCurrentPosition();
@@ -992,11 +1019,32 @@ export class LyricRenderer {
     const isFullSync = this.needsFullSync;
     this.needsFullSync = false;
 
+    // 副行展开进度插值：只驱动浮层显隐与折叠；行组占位已按激活态一次让出，无需逐帧重排
+    if (this.entranceComplete) {
+      const bgFactor = 1 - Math.exp(-12 * ((deltaTime || 16) / 1000));
+      let bgDirty = false;
+      for (let i = 1; i < lineCount; i++) {
+        if (!this.lines[i]?.isBG) continue;
+        const target = this.activeLineSet.has(i) ? 1 : 0;
+        const cur = this.bgExpandValues[i];
+        if (Math.abs(target - cur) < 0.001) {
+          if (cur !== target) this.bgExpandValues[i] = target;
+          continue;
+        }
+        this.bgExpandValues[i] = cur + (target - cur) * bgFactor;
+        bgDirty = true;
+      }
+      if (bgDirty) this.syncBgProgress();
+    }
+
     for (let i = 0; i < lineCount; i++) {
       const posSpring = this.positionSprings[i];
       const scaleSpring = this.scaleSprings[i];
       posSpring.update(deltaTime);
       scaleSpring.update(deltaTime);
+
+      // 背景行已收进主行浮层，随主行 DOM 移动：只推进弹簧供掩码视口判定，不写入位移
+      if (this.lines[i]?.isBG) continue;
 
       const yPos = posSpring.getCurrentPosition();
       const scale = scaleSpring.getCurrentPosition() / 100;

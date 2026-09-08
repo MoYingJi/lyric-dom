@@ -178,6 +178,7 @@ All styling is configured through CSS custom properties with built-in fallbacks:
 | `--lp-duet-indent`       | `15%`                   | Indentation for duet layout (`8%` on screens <= 600px).    |
 | `--lp-bg-font-size`      | `0.75em`                | Font size for background vocal lines (`isBG`).             |
 | `--lp-bg-active-opacity` | `0.4`                   | Opacity for active background vocal lines.                 |
+| `--lp-bg-tuck`           | `0.85em`                | Hidden offset a background float tucks into its main line. |
 | `--lp-hover-bg`          | `color-mix(...)`        | Background color when hovering over a clickable line.      |
 | `--lp-sub-font-size`     | `max(0.5em, 10px)`      | Font size for translation and romanization sub-text.       |
 | `--lp-sub-line-height`   | `1.5em`                 | Line height for translation and romanization sub-text.     |

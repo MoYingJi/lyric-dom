@@ -178,6 +178,7 @@ renderer.setLyrics(applyScrollPreroll(rawLines));
 | `--lp-duet-indent` | `15%` | 对唱模式下的单侧缩进距离（屏幕宽度 <= 600px 时自动为 `8%`）。 |
 | `--lp-bg-font-size` | `0.75em` | 背景和声歌词行（`isBG`）字体大小。 |
 | `--lp-bg-active-opacity` | `0.4` | 激活状态下的背景和声歌词透明度。 |
+| `--lp-bg-tuck` | `0.85em` | 隐藏时背景浮层收入主行内的下沉距离。 |
 | `--lp-hover-bg` | `color-mix(...)` | 鼠标悬停在可点击行时的胶囊高亮背景颜色。 |
 | `--lp-sub-font-size` | `max(0.5em, 10px)` | 翻译与罗马音副歌词字体大小。 |
 | `--lp-sub-line-height` | `1.5em` | 翻译与罗马音副歌词行高。 |

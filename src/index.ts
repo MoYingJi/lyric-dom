@@ -12,8 +12,8 @@ export type {
   WordAnimTarget,
   WordMeasurement,
 } from "./types";
+export { syncMainAndBackgroundLines } from "./utils/normalize";
 export {
   applyScrollPreroll,
   DEFAULT_SCROLL_PREROLL_OPTIONS,
 } from "./utils/scroll-preroll";
-export { syncMainAndBackgroundLines } from "./utils/normalize";
