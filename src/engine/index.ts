@@ -1,5 +1,6 @@
 import type { LyricLine, RendererConfig, ScrollPrerollOptions, SpringParams } from "../types";
 import { setMin } from "../utils/math";
+import { syncMainAndBackgroundLines } from "../utils/normalize";
 import { applyScrollPreroll } from "../utils/scroll-preroll";
 import { DEFAULTS } from "./constants";
 import {
@@ -44,11 +45,6 @@ export class LyricRenderer {
   );
   /** 背景人声行是否置于主行上方 */
   private isBgAbove: boolean[] = [];
-  /** 主行与背景行联合生命周期窗（对齐淡入淡出时机） */
-  private pairStartTime: Float64Array = new Float64Array(0);
-  private pairEndTime: Float64Array = new Float64Array(0);
-  /** 每行配对的伴侣行索引，无伴侣为 -1 */
-  private pairPartnerIndex: Int32Array = new Int32Array(0);
 
   /** 当前主激活行索引，多行激活时取最小 */
   private activeLineIndex = -1;
@@ -325,10 +321,15 @@ export class LyricRenderer {
       this.pendingHiddenLyrics = lines;
       return;
     }
-    this.rawLines = lines;
+    const clonedLines = lines.map((line) => ({
+      ...line,
+      words: line.words ? line.words.map((w) => ({ ...w })) : [],
+    }));
+    syncMainAndBackgroundLines(clonedLines);
+    this.rawLines = clonedLines;
     const processedLines = this.enableScrollPreroll
-      ? applyScrollPreroll(lines, this.scrollPrerollOptions)
-      : lines.map((line) => ({ ...line }));
+      ? applyScrollPreroll(clonedLines, this.scrollPrerollOptions)
+      : clonedLines.map((line) => ({ ...line }));
 
     const seekTime = this.pendingPlayTime >= 0 ? this.pendingPlayTime : 0;
     this.lineAnimations.cancelAll();
@@ -384,29 +385,6 @@ export class LyricRenderer {
     this.blurValues = new Float64Array(lineCount);
     this.passValues = new Float64Array(lineCount).fill(1);
     this.cachedPassKeys = new Array(lineCount).fill("");
-
-    // 初始化主行与背景行生命周期配对
-    this.pairStartTime = new Float64Array(lineCount);
-    this.pairEndTime = new Float64Array(lineCount);
-    this.pairPartnerIndex = new Int32Array(lineCount).fill(-1);
-    for (let i = 0; i < lineCount; i++) {
-      this.pairStartTime[i] = processedLines[i].startTime;
-      this.pairEndTime[i] = processedLines[i].endTime;
-    }
-    for (let i = 0; i < lineCount - 1; i++) {
-      const main = processedLines[i];
-      const bg = processedLines[i + 1];
-      if (!main.isBG && bg.isBG) {
-        const pStart = Math.min(main.startTime, bg.startTime);
-        const pEnd = Math.max(main.endTime, bg.endTime);
-        this.pairStartTime[i] = pStart;
-        this.pairEndTime[i] = pEnd;
-        this.pairStartTime[i + 1] = pStart;
-        this.pairEndTime[i + 1] = pEnd;
-        this.pairPartnerIndex[i] = i + 1;
-        this.pairPartnerIndex[i + 1] = i;
-      }
-    }
 
     this.entranceComplete = false;
 
@@ -711,32 +689,30 @@ export class LyricRenderer {
     activated.length = 0;
     deactivated.clear();
 
-    // 检测新激活的行
+    // 检测新激活的行（背景行跟随主行生命周期，不独立触发激活）
     for (let i = 0; i < lines.length; i++) {
-      if (this.activeLineSet.has(i)) continue;
-      const partner = this.pairPartnerIndex[i];
-      if (
-        partner !== -1 &&
-        partner < i &&
-        (this.activeLineSet.has(partner) || activated.includes(partner))
-      ) {
-        continue;
-      }
-      const start = this.pairStartTime[i];
-      const end = this.pairEndTime[i];
-      if (currentTime >= start && currentTime < end) {
+      const line = lines[i];
+      if (line.isBG || this.activeLineSet.has(i)) continue;
+
+      if (line.startTime <= currentTime && line.endTime > currentTime) {
         activated.push(i);
-        if (partner !== -1 && !this.activeLineSet.has(partner)) {
-          activated.push(partner);
-        }
+        if (lines[i + 1]?.isBG) activated.push(i + 1);
       }
     }
 
     // 检测需要停用的行
     for (const lineIdx of this.activeLineSet) {
-      const end = this.pairEndTime[lineIdx];
-      if (currentTime < this.pairStartTime[lineIdx] || currentTime >= end) {
+      const line = lines[lineIdx];
+      if (!line) {
         deactivated.add(lineIdx);
+        continue;
+      }
+      // 背景行由配对主行统一联动停用，避免反查时序延迟
+      if (line.isBG) continue;
+
+      if (line.startTime > currentTime || line.endTime <= currentTime) {
+        deactivated.add(lineIdx);
+        if (lines[lineIdx + 1]?.isBG) deactivated.add(lineIdx + 1);
       }
     }
 
@@ -779,21 +755,17 @@ export class LyricRenderer {
     // 扫描并激活目标时间对应的行
     const lines = this.lines;
     for (let i = 0; i < lines.length; i++) {
-      if (this.activeLineSet.has(i)) continue;
-      const partner = this.pairPartnerIndex[i];
-      if (partner !== -1 && partner < i && this.activeLineSet.has(partner)) {
-        continue;
-      }
-      const start = this.pairStartTime[i];
-      const end = this.pairEndTime[i];
-      if (targetTime >= start && targetTime < end) {
+      const line = lines[i];
+      if (line.isBG) continue;
+
+      if (line.startTime <= targetTime && targetTime < line.endTime) {
         this.activeLineSet.add(i);
         this.lineElements[i]?.classList.add("active");
         this.activateLineAnimations(i, targetTime);
-        if (partner !== -1 && !this.activeLineSet.has(partner)) {
-          this.activeLineSet.add(partner);
-          this.lineElements[partner]?.classList.add("active");
-          this.activateLineAnimations(partner, targetTime);
+        if (lines[i + 1]?.isBG) {
+          this.activeLineSet.add(i + 1);
+          this.lineElements[i + 1]?.classList.add("active");
+          this.activateLineAnimations(i + 1, targetTime);
         }
       }
     }

@@ -16,3 +16,4 @@ export {
   applyScrollPreroll,
   DEFAULT_SCROLL_PREROLL_OPTIONS,
 } from "./utils/scroll-preroll";
+export { syncMainAndBackgroundLines } from "./utils/normalize";
