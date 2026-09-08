@@ -20,6 +20,8 @@ export interface LineBuildOptions extends WordBuildOptions {
   showRomanization: boolean;
   /** 是否显示逐字音译 */
   showWordRomanization: boolean;
+  /** 是否始终将背景行置于主行下方 */
+  bgAlwaysBelow: boolean;
 }
 
 /** 行 DOM 构建结果 */
@@ -99,14 +101,14 @@ export const buildLineElements = (
   // 是否视为逐字
   const hasMultiWordLine = lines.some((line) => line.words.length > 1);
 
-  // 背景人声行：首词早于主行则置于主行上方
+  // 背景人声行：首词早于主行则置于主行上方，强制下置时忽略该判定
   for (let i = 1; i < lineCount; i++) {
     const bg = lines[i];
     const main = lines[i - 1];
     if (!bg?.isBG || main?.isBG) continue;
     const bgStart = bg.words[0]?.startTime ?? bg.startTime;
     const mainStart = main.words[0]?.startTime ?? main.startTime;
-    isBgAbove[i] = bgStart < mainStart;
+    isBgAbove[i] = !options.bgAlwaysBelow && bgStart < mainStart;
   }
 
   const fragment = document.createDocumentFragment();

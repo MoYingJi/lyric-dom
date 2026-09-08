@@ -43,6 +43,7 @@ export interface DemoState extends Record<string, unknown> {
   showRomanization: boolean;
   showWordRomanization: boolean;
   showRuby: boolean;
+  bgAlwaysBelow: boolean;
   enableScrollPreroll: boolean;
   scrollResetDelay: number;
   seekForwardThreshold: number;
@@ -70,6 +71,7 @@ export const createInitialState = (): DemoState => ({
   showRomanization: DEFAULTS.showRomanization,
   showWordRomanization: DEFAULTS.showWordRomanization,
   showRuby: DEFAULTS.showRuby,
+  bgAlwaysBelow: DEFAULTS.bgAlwaysBelow,
   enableScrollPreroll: DEFAULTS.enableScrollPreroll,
   scrollResetDelay: DEFAULTS.scrollResetDelay,
   seekForwardThreshold: DEFAULTS.seekForwardThreshold,
@@ -122,6 +124,7 @@ export const REBUILD_KEYS = new Set([
   "showRomanization",
   "showWordRomanization",
   "showRuby",
+  "bgAlwaysBelow",
   "enableScrollPreroll",
 ]);
 
@@ -155,6 +158,8 @@ export const CONTROL_DEFS: ControlDef<DemoState>[] = [
   { key: "showRomanization", label: "行音译歌词", type: "toggle" },
   { key: "showWordRomanization", label: "逐字音译", type: "toggle" },
   { key: "showRuby", label: "显示注音", type: "toggle" },
+  { type: "group", label: "背景和声" },
+  { key: "bgAlwaysBelow", label: "始终下置", type: "toggle" },
   { type: "group", label: "滚动与优化" },
   { key: "enableScrollPreroll", label: "滚动提前预滚", type: "toggle" },
   { key: "scrollResetDelay", label: "回弹延迟", type: "range", min: 0, max: 15000, step: 500 },

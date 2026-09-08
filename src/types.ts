@@ -208,6 +208,11 @@ export interface RendererConfig {
    */
   showRuby: boolean;
   /**
+   * 是否始终将背景行置于主行下方（忽略首词时间先后的上置判定）
+   * @default false
+   */
+  bgAlwaysBelow: boolean;
+  /**
    * 是否启用滚动预滚优化
    * @default true
    */

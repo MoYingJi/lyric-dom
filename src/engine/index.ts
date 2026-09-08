@@ -185,6 +185,8 @@ export class LyricRenderer {
   private showWordRomanization = DEFAULTS.showWordRomanization;
   /** 是否显示词内注音（ruby） */
   private showRuby = DEFAULTS.showRuby;
+  /** 是否始终将背景行置于主行下方 */
+  private bgAlwaysBelow = DEFAULTS.bgAlwaysBelow;
   /** 原始歌词数据（未应用滚动预滚前，用于动态开关预滚时重新计算） */
   private rawLines: LyricLine[] = [];
   /** 是否启用滚动提前预滚优化 */
@@ -399,6 +401,7 @@ export class LyricRenderer {
       showRomanization: this.showRomanization,
       showWordRomanization: this.showWordRomanization,
       showRuby: this.showRuby,
+      bgAlwaysBelow: this.bgAlwaysBelow,
     });
     this.lineElements = built.lineElements;
     this.wordMeasurements = built.wordMeasurements;
@@ -536,6 +539,10 @@ export class LyricRenderer {
       this.showRuby = config.showRuby;
       domRebuildNeeded = true;
     }
+    if (config.bgAlwaysBelow != null && config.bgAlwaysBelow !== this.bgAlwaysBelow) {
+      this.bgAlwaysBelow = config.bgAlwaysBelow;
+      domRebuildNeeded = true;
+    }
     if (
       config.enableScrollPreroll != null &&
       config.enableScrollPreroll !== this.enableScrollPreroll
@@ -597,6 +604,7 @@ export class LyricRenderer {
       showRomanization: this.showRomanization,
       showWordRomanization: this.showWordRomanization,
       showRuby: this.showRuby,
+      bgAlwaysBelow: this.bgAlwaysBelow,
     });
     this.lineElements = built.lineElements;
     this.wordMeasurements = built.wordMeasurements;

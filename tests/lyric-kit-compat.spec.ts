@@ -282,6 +282,50 @@ describe("lyric-kit 格式兼容性", () => {
     container.remove();
   });
 
+  it("开启背景行强制下置后，早于主行的背景行也置于主行下方", () => {
+    const lines = [
+      {
+        startTime: 4000,
+        endTime: 8000,
+        isBG: false,
+        isDuet: false,
+        translatedLyric: "",
+        romanLyric: "",
+        words: [{ word: "Main line starts late", startTime: 4000, endTime: 8000 }],
+      },
+      {
+        startTime: 2000,
+        endTime: 6000,
+        isBG: true,
+        isDuet: false,
+        translatedLyric: "",
+        romanLyric: "",
+        words: [{ word: "Top background starts early", startTime: 2000, endTime: 6000 }],
+      },
+    ];
+
+    const container = document.createElement("div");
+    Object.defineProperty(container, "clientWidth", { value: 800 });
+    Object.defineProperty(container, "clientHeight", { value: 600 });
+    document.body.appendChild(container);
+
+    // 默认按时间判定上置
+    const renderer = new LyricRenderer(container, { enableScrollPreroll: false });
+    renderer.setLyrics(lines);
+    expect(container.querySelector(".lp-line-bg")?.classList.contains("above")).toBe(true);
+
+    // 开启强制下置后热更新为下置
+    renderer.setConfig({ bgAlwaysBelow: true });
+    expect(container.querySelector(".lp-line-bg")?.classList.contains("above")).toBe(false);
+
+    // 关闭后恢复按时间判定
+    renderer.setConfig({ bgAlwaysBelow: false });
+    expect(container.querySelector(".lp-line-bg")?.classList.contains("above")).toBe(true);
+
+    renderer.dispose();
+    container.remove();
+  });
+
   it("加载歌词时自动对齐主行与背景行的时间窗口", () => {
     const lines = [
       {

@@ -47,6 +47,8 @@ export const DEFAULTS = {
   showWordRomanization: false,
   /** 是否显示词内注音（ruby） */
   showRuby: false,
+  /** 是否始终将背景行置于主行下方 */
+  bgAlwaysBelow: false,
   /** 是否启用滚动预滚优化 */
   enableScrollPreroll: true,
   /** 滚动预滚微调参数 */
