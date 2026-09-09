@@ -140,7 +140,6 @@ export class Spring {
     // 远离目标时不可能稳定，跳过速度/加速度求值
     if (Math.abs(this.targetPosition - this.position) >= 0.01) return false;
     const isSettled =
-      Math.abs(this.targetPosition - this.position) < 0.01 &&
       Math.abs(this.velocitySolver(this.elapsedTime)) < 0.01 &&
       Math.abs(this.accelerationSolver(this.elapsedTime)) < 0.01;
     if (isSettled) {

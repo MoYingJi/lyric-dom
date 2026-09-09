@@ -11,6 +11,9 @@ export const isCJK = (char: string): boolean => CJK_RE.test(char);
 
 const hasSegmenter = typeof Intl !== "undefined" && typeof Intl.Segmenter !== "undefined";
 
+/** 词边界分词器单例 */
+let wordSegmenter: Intl.Segmenter | undefined;
+
 /**
  * 根据时间比例创建一个歌词原子
  * @param word - 文字内容
@@ -109,7 +112,8 @@ export const chunkAndSplitLyricWords = (words: LyricWord[]): (LyricWord | LyricW
 
   // 利用 Intl.Segmenter 按词边界重新分组
   const fullText = atoms.map((a) => a.word).join("");
-  const segments = new Intl.Segmenter(undefined, { granularity: "word" }).segment(fullText);
+  wordSegmenter ??= new Intl.Segmenter(undefined, { granularity: "word" });
+  const segments = wordSegmenter.segment(fullText);
   const result: (LyricWord | LyricWord[])[] = [];
   let atomIdx = 0;
   let actual = 0;

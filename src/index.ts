@@ -1,5 +1,5 @@
 export { LyricRenderer } from "./engine";
-export { DEFAULT_SCROLL_PREROLL, DEFAULTS } from "./engine/constants";
+export { DEFAULTS } from "./engine/constants";
 export type {
   LineClickCallback,
   LyricLanguage,
@@ -13,7 +13,4 @@ export type {
   WordMeasurement,
 } from "./types";
 export { syncMainAndBackgroundLines } from "./utils/normalize";
-export {
-  applyScrollPreroll,
-  DEFAULT_SCROLL_PREROLL_OPTIONS,
-} from "./utils/scroll-preroll";
+export { applyScrollPreroll } from "./utils/scroll-preroll";

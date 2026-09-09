@@ -2,13 +2,7 @@
  * 歌词渲染引擎 — 默认配置常量
  */
 
-import type { ScrollPrerollOptions } from "../types";
-
-export const DEFAULT_SCROLL_PREROLL: Required<ScrollPrerollOptions> = {
-  advanceNoOverlap: 600,
-  advanceOverlap: 400,
-  overlapBoundaryRatio: 0.3,
-};
+import { DEFAULT_SCROLL_PREROLL_OPTIONS } from "../utils/scroll-preroll";
 
 export const DEFAULTS = {
   /** 用户滚动后自动回弹的延迟时间（毫秒） */
@@ -52,7 +46,7 @@ export const DEFAULTS = {
   /** 是否启用滚动预滚优化 */
   enableScrollPreroll: true,
   /** 滚动预滚微调参数 */
-  scrollPrerollOptions: DEFAULT_SCROLL_PREROLL,
+  scrollPrerollOptions: DEFAULT_SCROLL_PREROLL_OPTIONS,
   /** 播放跳转识别后退阈值（毫秒） */
   seekBackwardThreshold: 100,
   /** 播放跳转识别前进阈值（毫秒） */
