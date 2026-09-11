@@ -118,4 +118,60 @@ describe("setConfig 原地热更新 (In-place Hot Update)", () => {
 
     renderer.dispose();
   });
+
+  it("播放暂停切换时，保持行的缩放目标不变，避免逐行放大抖动", () => {
+    const container = document.createElement("div");
+    Object.defineProperty(container, "clientWidth", { value: 800 });
+    Object.defineProperty(container, "clientHeight", { value: 600 });
+
+    const renderer = new LyricRenderer(container);
+    const lines: LyricLine[] = [
+      {
+        startTime: 1000,
+        endTime: 3000,
+        words: [{ startTime: 1000, endTime: 3000, word: "Line 1" }],
+        translatedLyric: "",
+        romanLyric: "",
+        isBG: false,
+        isDuet: false,
+      },
+      {
+        startTime: 3000,
+        endTime: 5000,
+        words: [{ startTime: 3000, endTime: 5000, word: "Line 2" }],
+        translatedLyric: "",
+        romanLyric: "",
+        isBG: false,
+        isDuet: false,
+      },
+    ];
+
+    renderer.setLyrics(lines);
+    renderer.setPlaying(true);
+    renderer.setCurrentTime(2000);
+
+    const engine = renderer as unknown as {
+      processTime: (t: number) => boolean;
+      scaleSprings: Array<{ getTargetPosition: () => number }>;
+    };
+    engine.processTime(2000);
+
+    // 第一行激活（scale 100），第二行非激活（scale 97）
+    expect(engine.scaleSprings[0].getTargetPosition()).toBe(100);
+    expect(engine.scaleSprings[1].getTargetPosition()).toBe(97);
+
+    // 暂停播放
+    renderer.setPlaying(false);
+
+    // 缩放目标依然保持稳定，不会跳回 100 触发波浪放大
+    expect(engine.scaleSprings[0].getTargetPosition()).toBe(100);
+    expect(engine.scaleSprings[1].getTargetPosition()).toBe(97);
+
+    // 动态关闭歌词缩放效果
+    renderer.setConfig({ enableScale: false });
+    expect(engine.scaleSprings[0].getTargetPosition()).toBe(100);
+    expect(engine.scaleSprings[1].getTargetPosition()).toBe(100);
+
+    renderer.dispose();
+  });
 });

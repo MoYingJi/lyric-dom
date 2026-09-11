@@ -73,6 +73,7 @@ const renderer = new LyricRenderer(container, {
   hidePassedLines: state.hidePassedLines,
   enableBlur: state.enableBlur,
   enableFloatAnimation: state.enableFloatAnimation,
+  enableScale: state.enableScale,
   enableEmphasizeEffect: state.enableEmphasizeEffect,
   emphasizeMinDuration: state.emphasizeMinDuration,
   showTranslation: state.showTranslation,

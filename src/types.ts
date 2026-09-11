@@ -178,6 +178,11 @@ export interface RendererConfig {
    */
   enableFloatAnimation: boolean;
   /**
+   * 是否启用歌词缩放效果
+   * @default true
+   */
+  enableScale: boolean;
+  /**
    * 是否启用长音节强调动效
    * @default false
    */

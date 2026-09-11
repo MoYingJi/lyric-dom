@@ -243,4 +243,10 @@ export class Spring {
    * @returns 当前弹簧位置
    */
   getCurrentPosition = (): number => this.position;
+
+  /**
+   * 获取目标位置
+   * @returns 目标位置
+   */
+  getTargetPosition = (): number => this.pendingPosition?.position ?? this.targetPosition;
 }

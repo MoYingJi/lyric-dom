@@ -177,6 +177,8 @@ export class LyricRenderer {
   private enableWordHighlight = DEFAULTS.enableWordHighlight;
   /** 是否启用逐字上浮动画 */
   private enableFloatAnimation = DEFAULTS.enableFloatAnimation;
+  /** 是否启用歌词缩放效果 */
+  private enableScale = DEFAULTS.enableScale;
   /** 是否启用强调效果（缩放 + 辉光） */
   private enableEmphasizeEffect = DEFAULTS.enableEmphasizeEffect;
   /** 是否显示翻译歌词 */
@@ -238,7 +240,7 @@ export class LyricRenderer {
     [this.dotsContainer, this.dotElements] = createInterludeDots(this.innerElement);
     // 创建 bottom-line 容器
     this.bottomLineEl = document.createElement("div");
-    this.bottomLineEl.className = "lp-line lp-credit";
+    this.bottomLineEl.className = "lp-credit";
     this.innerElement.appendChild(this.bottomLineEl);
     if (config) this.applyConfig(config);
     // 缓存容器尺寸
@@ -411,6 +413,7 @@ export class LyricRenderer {
     this.lineAnimTargets = built.lineAnimTargets;
     this.isBgAbove = built.isBgAbove;
     this.innerElement.appendChild(built.fragment);
+    this.innerElement.appendChild(this.bottomLineEl);
 
     // 哨兵观察器：监听第一行尺寸变化以检测字体/样式变化
     this.sentinelResizeObserver.disconnect();
@@ -468,7 +471,7 @@ export class LyricRenderer {
     if (playing) this.lineAnimations.realignActive(this.lines, this.lastProcessedTime);
     else this.lineAnimations.pauseActive();
 
-    this.calculateLayout(false);
+    this.calculateLayout(false, true);
     this.needsFullSync = true;
   };
 
@@ -516,6 +519,10 @@ export class LyricRenderer {
     if (config.enableWordHighlight != null) this.enableWordHighlight = config.enableWordHighlight;
     if (config.enableFloatAnimation != null)
       this.enableFloatAnimation = config.enableFloatAnimation;
+    if (config.enableScale != null && config.enableScale !== this.enableScale) {
+      this.enableScale = config.enableScale;
+      layoutDirty = true;
+    }
     if (
       config.enableEmphasizeEffect != null &&
       config.enableEmphasizeEffect !== this.enableEmphasizeEffect
@@ -933,7 +940,7 @@ export class LyricRenderer {
       }
 
       const isActive = this.activeLineSet.has(i);
-      const targetScale = !isActive && this.isPlaying ? 97 : 100;
+      const targetScale = this.enableScale && this.activeLineSet.size > 0 && !isActive ? 97 : 100;
       const bg = lines[i + 1];
       const bgOpen = bg?.isBG ? this.activeLineSet.has(i + 1) : false;
       const bgH = bgOpen ? this.lineHeights[i + 1] || 40 : 0;
@@ -1090,7 +1097,7 @@ export class LyricRenderer {
 
     // bottom-line 随弹簧平滑移动；无内容或屏外时跳过
     this.bottomLineSpring.update(deltaTime);
-    if (this.bottomLineEl.childElementCount > 0) {
+    if (this.bottomLineEl.childNodes.length > 0) {
       const bottomY = this.bottomLineSpring.getCurrentPosition();
       const bottomInView = bottomY >= -500 && bottomY <= viewHeight + 500;
       if (this.bottomWillChange !== bottomInView) {

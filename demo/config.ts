@@ -13,7 +13,7 @@ export type SpringPreset =
   | "noBounce"
   | "custom";
 
-/** 弹簧预设参数映射（与 SPlayer-Next 严格对齐） */
+/** 弹簧预设参数映射 */
 export const SPRING_PRESETS: Record<
   Exclude<SpringPreset, "custom">,
   { mass: number; damping: number; stiffness: number }
@@ -37,6 +37,7 @@ export interface DemoState extends Record<string, unknown> {
   hidePassedLines: boolean;
   enableBlur: boolean;
   enableFloatAnimation: boolean;
+  enableScale: boolean;
   enableEmphasizeEffect: boolean;
   emphasizeMinDuration: number;
   showTranslation: boolean;
@@ -65,6 +66,7 @@ export const createInitialState = (): DemoState => ({
   hidePassedLines: DEFAULTS.hidePassedLines,
   enableBlur: DEFAULTS.enableBlur,
   enableFloatAnimation: DEFAULTS.enableFloatAnimation,
+  enableScale: DEFAULTS.enableScale,
   enableEmphasizeEffect: DEFAULTS.enableEmphasizeEffect,
   emphasizeMinDuration: DEFAULTS.emphasizeMinDuration,
   showTranslation: DEFAULTS.showTranslation,
@@ -143,6 +145,7 @@ export const CONTROL_DEFS: ControlDef<DemoState>[] = [
   { key: "hidePassedLines", label: "隐藏已播行", type: "toggle" },
   { type: "group", label: "动效与强调" },
   { key: "enableBlur", label: "逐行模糊", type: "toggle" },
+  { key: "enableScale", label: "歌词缩放", type: "toggle" },
   { key: "enableFloatAnimation", label: "逐字上浮", type: "toggle" },
   { key: "enableEmphasizeEffect", label: "强调辉光", type: "toggle" },
   {

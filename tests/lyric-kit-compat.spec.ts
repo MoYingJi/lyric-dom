@@ -366,4 +366,53 @@ describe("lyric-kit 格式兼容性", () => {
     renderer.dispose();
     container.remove();
   });
+
+  it("底部信息行 (.lp-credit) 独立于普通歌词行 (.lp-line)，支持 textContent 赋值并正确响应渲染", () => {
+    const container = document.createElement("div");
+    Object.defineProperty(container, "clientWidth", { value: 800 });
+    Object.defineProperty(container, "clientHeight", { value: 600 });
+    document.body.appendChild(container);
+
+    const renderer = new LyricRenderer(container);
+    const bottomEl = renderer.getBottomLineElement();
+
+    // 验证类名解耦：具有 lp-credit，但不包含 lp-line
+    expect(bottomEl.classList.contains("lp-credit")).toBe(true);
+    expect(bottomEl.classList.contains("lp-line")).toBe(false);
+
+    // 填充歌词
+    const lines = [
+      {
+        startTime: 1000,
+        endTime: 3000,
+        words: [{ startTime: 1000, endTime: 3000, word: "Line 1" }],
+        translatedLyric: "",
+        romanLyric: "",
+        isBG: false,
+        isDuet: false,
+      },
+    ];
+    renderer.setLyrics(lines);
+
+    // 验证 DOM 顺序：bottomEl 位于歌词行之后
+    const innerEl = container.querySelector(".lp-inner");
+    expect(innerEl?.lastElementChild).toBe(bottomEl);
+
+    // 直接通过 textContent 赋值文本
+    bottomEl.textContent = "作词: 测试 / 作曲: 测试";
+
+    // 推进时间并触发布局计算
+    renderer.setCurrentTime(2000);
+    // 强制执行一帧渲染
+    const engine = renderer as unknown as {
+      onAnimationFrame: (now: number) => void;
+    };
+    engine.onAnimationFrame(performance.now() + 16);
+
+    // 验证 transform 已被赋予
+    expect(bottomEl.style.transform).toMatch(/translateY\([0-9.-]+px\)/);
+
+    renderer.dispose();
+    container.remove();
+  });
 });

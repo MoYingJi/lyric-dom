@@ -283,23 +283,16 @@
 /* ---- 底部信息行 ---- */
 
 .lp-credit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--lp-line-padding, 0.4em 1em);
+  color: var(--lp-color, #fff);
+  font-size: var(--lp-font-size, inherit);
   opacity: var(--lp-credit-opacity, 0.3);
-  pointer-events: auto !important; /* 启用交互并阻止点击穿透到下方的歌词行 */
-  z-index: 10 !important; /* 提升层级，防止被歌词行遮挡和阻断点击 */
-  background: none !important;
-  background-color: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
-  outline: none !important;
-}
-
-.lp-credit:hover,
-.lp-credit:active {
-  background: none !important;
-  background-color: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
-  outline: none !important;
+  pointer-events: auto;
 }
 
 .lp-credit:empty {
