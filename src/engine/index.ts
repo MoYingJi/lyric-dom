@@ -39,6 +39,8 @@ export class LyricRenderer {
   private wordMeasurements: WordMeasurement[][] = [];
   /** 每行的单词动画目标 */
   private lineAnimTargets: WordAnimTarget[][] = [];
+  /** 当前歌词是否包含逐字时间轴 */
+  private hasWordTiming = false;
   /** 行级 Web Animations 生命周期管理 */
   private lineAnimations = new LineAnimationController((lineIndex) =>
     this.activeLineSet.has(lineIndex),
@@ -344,6 +346,7 @@ export class LyricRenderer {
     for (const element of this.lineElements) element.remove();
     // 重置状态
     this.lines = processedLines;
+    this.hasWordTiming = processedLines.some((line) => line.words.length > 1);
     this.activeLineIndex = -1;
     this.activeLineSet.clear();
     this.lastProcessedTime = -1;
@@ -1138,6 +1141,7 @@ export class LyricRenderer {
     const frameDeltaSec = (deltaTime || 16) / 1000;
     const attackFactor = 1 - Math.exp(-this.alphaAttackSpeed * frameDeltaSec);
     const releaseFactor = 1 - Math.exp(-this.alphaReleaseSpeed * frameDeltaSec);
+    const brightenFactor = this.hasWordTiming ? attackFactor : releaseFactor;
     const blurFactor = 1 - Math.exp(-12 * frameDeltaSec);
     const halfInactive = this.inactiveAlpha * 0.5;
     const doPass = this.hidePassedLines && this.isPlaying;
@@ -1167,7 +1171,7 @@ export class LyricRenderer {
           !isPassed && brightValue < halfInactive
             ? releaseFactor
             : targetBright > brightValue
-              ? attackFactor
+              ? brightenFactor
               : releaseFactor;
         brightValue += (targetBright - brightValue) * factor;
       }
