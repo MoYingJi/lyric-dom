@@ -3,6 +3,24 @@
   "version": "0.1.0",
   "description": "A framework-agnostic karaoke lyrics renderer for the browser, built on the native DOM API with zero runtime dependencies.",
   "type": "module",
+  "packageManager": "pnpm@11.21.0",
+  "author": {
+    "name": "imsyy",
+    "email": "imsyy1024@gmail.com",
+    "url": "https://imsyy.top"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SPlayer-Dev/lyric-dom.git"
+  },
+  "homepage": "https://github.com/SPlayer-Dev/lyric-dom#readme",
+  "bugs": {
+    "url": "https://github.com/SPlayer-Dev/lyric-dom/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
@@ -14,7 +32,8 @@
     "./renderer.css": "./dist/style.css"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.zh-CN.md"
   ],
   "sideEffects": [
     "**/*.css"
@@ -23,9 +42,11 @@
     "dev": "vite",
     "build": "tsdown",
     "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "prepublishOnly": "pnpm run typecheck && pnpm run test && pnpm run build"
   },
   "keywords": [
     "lyrics",
