@@ -943,7 +943,7 @@ export class LyricRenderer {
       }
 
       const isActive = this.activeLineSet.has(i);
-      const targetScale = this.enableScale && this.activeLineSet.size > 0 && !isActive ? 97 : 100;
+      const targetScale = this.enableScale && !isActive ? 97 : 100;
       const bg = lines[i + 1];
       const bgOpen = bg?.isBG ? this.activeLineSet.has(i + 1) : false;
       const bgH = bgOpen ? this.lineHeights[i + 1] || 40 : 0;

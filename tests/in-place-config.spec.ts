@@ -167,6 +167,13 @@ describe("setConfig 原地热更新 (In-place Hot Update)", () => {
     expect(engine.scaleSprings[0].getTargetPosition()).toBe(100);
     expect(engine.scaleSprings[1].getTargetPosition()).toBe(97);
 
+    // 恢复播放并进入两句之间的间隔（t=5000，第一行已结束，第二行未开始）
+    renderer.setPlaying(true);
+    engine.processTime(5000);
+    // 第一行唱完恢复 97，第二行未开始保持 97，绝不会全体弹回 100
+    expect(engine.scaleSprings[0].getTargetPosition()).toBe(97);
+    expect(engine.scaleSprings[1].getTargetPosition()).toBe(97);
+
     // 动态关闭歌词缩放效果
     renderer.setConfig({ enableScale: false });
     expect(engine.scaleSprings[0].getTargetPosition()).toBe(100);
