@@ -220,6 +220,11 @@ interface LyricSpan {
 }
 ```
 
+## 致谢
+
+- [amll-dev/applemusic-like-lyrics](https://github.com/amll-dev/applemusic-like-lyrics)
+- [SPlayer-Dev/lyric-kit](https://github.com/SPlayer-Dev/lyric-kit)
+
 ## 开源协议
 
-[AGPL-3.0](LICENSE)
+[AGPL-3.0](LICENSE) © [SPlayer-Dev](https://github.com/SPlayer-Dev)
