@@ -129,8 +129,8 @@ export const buildLineElements = (
       !showWordRomanForLine &&
       !(options.showRuby && line.words[0]?.ruby?.length);
 
-    // ── 主行：独立排版单元 ──
-    if (!line.isBG) {
+    // 主行
+    if (!line.isBG || !hostingMain) {
       const lineEl = document.createElement("div");
       lineEl.className = `lp-line${line.isDuet ? " duet" : ""}`;
 
@@ -156,9 +156,7 @@ export const buildLineElements = (
       continue;
     }
 
-    // ── 背景行：收进主行浮层（仅激活时可见）──
-    if (!hostingMain) continue; // 异常兜底：无主行可依附则丢弃
-
+    // 背景行
     const bgEl = document.createElement("div");
     bgEl.className = `lp-line-bg${isBgAbove[i] ? " above" : ""}${line.isDuet ? " duet" : ""}`;
 

@@ -326,7 +326,6 @@ export class LyricRenderer {
    * @param lines - 歌词行数组
    */
   setLyrics = (lines: LyricLine[]) => {
-    // 页面隐藏期间无渲染机会，逐次重建 DOM 纯属浪费；缓冲到恢复可见时一次性应用
     if (!this.isPageVisible) {
       this.pendingHiddenLyrics = lines;
       return;
@@ -335,6 +334,17 @@ export class LyricRenderer {
       ...line,
       words: line.words ? line.words.map((w) => ({ ...w })) : [],
     }));
+    // 首行与连续背景行无主行可依附，降级为主行
+    let consecutiveBgCount = 0;
+    for (let i = 0; i < clonedLines.length; i++) {
+      const line = clonedLines[i];
+      if (!line.isBG) {
+        consecutiveBgCount = 0;
+        continue;
+      }
+      consecutiveBgCount++;
+      if (i === 0 || consecutiveBgCount > 1) line.isBG = false;
+    }
     syncMainAndBackgroundLines(clonedLines);
     this.rawLines = clonedLines;
     const processedLines = this.enableScrollPreroll
