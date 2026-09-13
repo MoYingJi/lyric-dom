@@ -169,11 +169,13 @@
 
   ruby {
     ruby-position: over;
+    ruby-align: center;
 
     & rt {
       font-size: var(--lp-ruby-font-size, 0.5em);
       line-height: var(--lp-ruby-line-height, 1em);
       color: var(--lp-ruby-color, inherit);
+      text-align: center;
     }
   }
 
@@ -181,13 +183,18 @@
   & > span.lp-word-roman {
     display: inline-flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     vertical-align: bottom;
-    text-align: left;
+    text-align: center;
     margin-inline-end: var(--lp-word-roman-gap, 0.3em);
 
     &:last-child {
       margin-inline-end: 0;
+    }
+
+    &:first-child {
+      align-items: flex-start;
+      text-align: left;
     }
   }
 
@@ -220,7 +227,7 @@
   .lp-word-text {
     display: inline-block;
     white-space: pre;
-    text-align: left;
+    text-align: inherit;
   }
 
   .lp-roman-word {
@@ -234,13 +241,13 @@
     white-space: nowrap;
     user-select: none;
     pointer-events: none;
-    text-align: left;
+    text-align: inherit;
   }
 
   .lp-emp-chars {
     display: inline-block;
     white-space: pre;
-    text-align: left;
+    text-align: inherit;
   }
 }
 
