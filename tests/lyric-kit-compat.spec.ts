@@ -415,4 +415,37 @@ describe("lyric-kit 格式兼容性", () => {
     renderer.dispose();
     container.remove();
   });
+
+  it("开启强调效果（enableEmphasizeEffect）时西文长音节歌词保留词间空格", () => {
+    const qrc = `
+[00:56.72]<00:56.72>There's <00:57.03>one <00:57.31>in <00:57.52>a <00:57.69>million <00:59.06>it <00:59.43>gotta <00:59.97>be <01:00.17>you
+[01:06.58]<01:06.58>Angela <01:07.71>Angela <01:08.66>Angela
+    `.trim();
+
+    const result = parseLyric(qrc);
+    expect(result.lines.length).toBe(2);
+
+    const container = document.createElement("div");
+    Object.defineProperty(container, "clientWidth", { value: 800 });
+    Object.defineProperty(container, "clientHeight", { value: 600 });
+    document.body.appendChild(container);
+
+    const renderer = new LyricRenderer(container, {
+      enableEmphasizeEffect: true,
+      emphasizeMinDuration: 1000,
+    });
+    renderer.setLyrics(result.lines);
+
+    const lineEls = container.querySelectorAll(".lp-line");
+    expect(lineEls.length).toBe(2);
+
+    const line0Text = lineEls[0].querySelector(".lp-main")?.textContent;
+    expect(line0Text).toBe("There's one in a million it gotta be you");
+
+    const line1Text = lineEls[1].querySelector(".lp-main")?.textContent;
+    expect(line1Text).toBe("Angela Angela Angela");
+
+    renderer.dispose();
+    container.remove();
+  });
 });

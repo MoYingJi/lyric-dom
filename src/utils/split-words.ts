@@ -110,10 +110,61 @@ export const chunkAndSplitLyricWords = (words: LyricWord[]): (LyricWord | LyricW
 
   if (!hasSegmenter) return atoms;
 
-  // 利用 Intl.Segmenter 按词边界重新分组
-  const fullText = atoms.map((a) => a.word).join("");
+  // 按词边界（空格或空白）切分为独立的连续字块，避免跨空格合并西文单词
+  const runs: LyricWord[][] = [];
+  let currentRun: LyricWord[] = [];
+
+  for (let i = 0; i < atoms.length; i++) {
+    const atom = atoms[i];
+    currentRun.push(atom);
+    if (i === atoms.length - 1 || hasWordBoundaryBetween(atom, atoms[i + 1])) {
+      runs.push(currentRun);
+      currentRun = [];
+    }
+  }
+
   wordSegmenter ??= new Intl.Segmenter(undefined, { granularity: "word" });
-  const segments = wordSegmenter.segment(fullText);
+  const result: (LyricWord | LyricWord[])[] = [];
+
+  for (const run of runs) {
+    if (run.length === 1) {
+      result.push(run[0]);
+    } else {
+      result.push(...groupAtomsBySegmenter(run, wordSegmenter));
+    }
+  }
+
+  return result;
+};
+
+/**
+ * 判断两个相邻原子之间是否存在天然词边界
+ * @param current - 当前原子
+ * @param next - 下一个原子
+ * @returns 是否存在边界
+ */
+const hasWordBoundaryBetween = (current: LyricWord, next?: LyricWord): boolean => {
+  if (current.endsWithSpace || /\s$/.test(current.word) || !current.word.trim()) {
+    return true;
+  }
+  if (next && (/^\s/.test(next.word) || !next.word.trim())) {
+    return true;
+  }
+  return false;
+};
+
+/**
+ * 在无空格的连续原子序列上应用分词器按词边界重新分组
+ * @param atoms - 连续原子数组
+ * @param segmenter - 分词器实例
+ * @returns 分组后的单词或单词组数组
+ */
+const groupAtomsBySegmenter = (
+  atoms: LyricWord[],
+  segmenter: Intl.Segmenter,
+): (LyricWord | LyricWord[])[] => {
+  const fullText = atoms.map((a) => a.word).join("");
+  const segments = segmenter.segment(fullText);
   const result: (LyricWord | LyricWord[])[] = [];
   let atomIdx = 0;
   let actual = 0;
@@ -130,7 +181,6 @@ export const chunkAndSplitLyricWords = (words: LyricWord[]): (LyricWord | LyricW
     }
 
     if (actual === expected) {
-      // 将前导空白从分组中提出
       while (group.length > 1 && !group[0].word.trim()) {
         const leading = group.shift();
         if (leading) result.push(leading);
@@ -140,7 +190,6 @@ export const chunkAndSplitLyricWords = (words: LyricWord[]): (LyricWord | LyricW
     }
   }
 
-  // 处理剩余原子
   while (atomIdx < atoms.length) {
     result.push(atoms[atomIdx++]);
   }
